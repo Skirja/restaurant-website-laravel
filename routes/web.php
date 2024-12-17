@@ -14,6 +14,14 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/menu', function () {
+    return Inertia::render('Menu');
+})->name('menu');
+
+Route::get('/booking-dinein', function () {
+    return Inertia::render('BookingDinein');
+})->name('booking-dinein');
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');

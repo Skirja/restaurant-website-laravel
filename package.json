@@ -23,5 +23,17 @@
         "tailwindcss": "^3.2.1",
         "typescript": "^5.0.2",
         "vite": "^5.0"
+    },
+    "dependencies": {
+        "@radix-ui/react-popover": "^1.1.4",
+        "@radix-ui/react-select": "^2.1.4",
+        "@radix-ui/react-slot": "^1.1.1",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "date-fns": "^3.6.0",
+        "lucide-react": "^0.468.0",
+        "react-day-picker": "^8.10.1",
+        "tailwind-merge": "^2.5.5",
+        "tailwindcss-animate": "^1.0.7"
     }
 }
