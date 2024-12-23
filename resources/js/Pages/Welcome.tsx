@@ -47,13 +47,13 @@ export default function Welcome({ auth }: PageProps) {
         {
             title: "Takeaway",
             icon: <ShoppingBag className="w-16 h-16 text-amber-600" />,
-            link: "/menu",
+            link: "/menu-selection/takeaway",
             description: "Pesan makanan dengan metode takeaway"
         },
         {
             title: "Delivery",
             icon: <Truck className="w-16 h-16 text-amber-600" />,
-            link: "/menu",
+            link: "/menu-selection/delivery",
             description: "Pesan makanan dengan metode delivery"
         }
     ];

@@ -22,6 +22,26 @@ Route::get('/booking-dinein', function () {
     return Inertia::render('BookingDinein');
 })->name('booking-dinein');
 
+Route::get('/menu-selection/takeaway', function () {
+    return Inertia::render('MenuSelection', [
+        'orderType' => 'takeaway'
+    ]);
+})->name('menu-selection.takeaway');
+
+Route::get('/menu-selection/delivery', function () {
+    return Inertia::render('MenuSelection', [
+        'orderType' => 'delivery'
+    ]);
+})->name('menu-selection.delivery');
+
+Route::get('/takeaway-checkout', function () {
+    return Inertia::render('TakeawayCheckout');
+})->name('takeaway-checkout');
+
+Route::get('/delivery-checkout', function () {
+    return Inertia::render('DeliveryCheckout');
+})->name('delivery-checkout');
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
