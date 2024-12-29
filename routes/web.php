@@ -26,6 +26,10 @@ Route::get('/', function () {
 // Home route for role-based redirection
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+Route::get('/menu', function () {
+    return Inertia::render('Menu');
+})->name('menu');
+
 Route::get('/menu-selection/{type?}', function ($type = 'takeaway') {
     return Inertia::render('MenuSelection', [
         'orderType' => $type,

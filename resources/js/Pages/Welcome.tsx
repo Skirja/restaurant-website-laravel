@@ -123,7 +123,7 @@ export default function Welcome({ auth }: PageProps) {
                         </li>
                         <li className="flex flex-col items-center">
                             <List className="w-6 h-6 mb-1" />
-                            <a href="/menu" className="text-xs">Daftar Menu</a>
+                            <a href={route('menu')} className="text-xs">Daftar Menu</a>
                         </li>
                         <li className="flex flex-col items-center">
                             <User className="w-6 h-6 mb-1" />

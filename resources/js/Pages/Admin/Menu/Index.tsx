@@ -17,18 +17,29 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash, ImageIcon } from "lucide-react";
+
+// Function to format number to IDR
+const formatToIDR = (value: number): string => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value);
+};
 
 interface MenuItem {
     id: string;
     name: string;
     description: string;
     price: number;
+    formatted_price?: string;
     category: {
         id: string;
         name: string;
     };
-    image_url: string;
+    image_url: string | null;
     stock_quantity: number;
     is_available: boolean;
 }
@@ -74,12 +85,16 @@ export default function Index({ menu_items, categories }: Props) {
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
-                                            {item.image_url && (
+                                            {item.image_url ? (
                                                 <img
-                                                    src={item.image_url}
+                                                    src={`/storage/menu-items/${item.image_url.split('/').pop()}`}
                                                     alt={item.name}
                                                     className="h-10 w-10 rounded-md object-cover"
                                                 />
+                                            ) : (
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100">
+                                                    <ImageIcon className="h-5 w-5 text-gray-400" />
+                                                </div>
                                             )}
                                             <div>
                                                 <div>{item.name}</div>
@@ -90,7 +105,7 @@ export default function Index({ menu_items, categories }: Props) {
                                         </div>
                                     </TableCell>
                                     <TableCell>{item.category.name}</TableCell>
-                                    <TableCell>${item.price}</TableCell>
+                                    <TableCell>{item.formatted_price || formatToIDR(item.price)}</TableCell>
                                     <TableCell>{item.stock_quantity}</TableCell>
                                     <TableCell>
                                         <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${

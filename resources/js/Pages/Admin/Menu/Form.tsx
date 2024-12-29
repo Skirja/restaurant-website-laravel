@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm as useInertiaForm, router } from '@inertiajs/react';
 import { Button } from "@/Components/ui/button";
 import {
     Form as FormRoot,
@@ -21,6 +21,25 @@ import {
 } from "@/Components/ui/select";
 import { Switch } from "@/Components/ui/switch";
 import { Label } from "@/Components/ui/label";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+// Function to format number to IDR
+const formatToIDR = (value: number): string => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value);
+};
+
+// Function to parse IDR string to number
+const parseFromIDR = (value: string): number => {
+    // Remove currency symbol, dots, and other non-numeric characters
+    return parseInt(value.replace(/[^0-9]/g, ''));
+};
 
 interface Category {
     id: string;
@@ -33,7 +52,7 @@ interface MenuItem {
     description: string;
     price: number;
     category_id: string;
-    image_url?: string;
+    image_url?: string | File;
     stock_quantity: number;
     is_available: boolean;
 }
@@ -43,33 +62,68 @@ interface Props {
     menu_item?: MenuItem;
 }
 
+const formSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    description: z.string().min(1, "Description is required"),
+    price: z.string().min(1, "Price is required"),
+    category_id: z.string().min(1, "Category is required"),
+    image_url: z.any().optional(),
+    stock_quantity: z.number().min(0, "Stock quantity must be positive"),
+    is_available: z.boolean(),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
 export default function Form({ categories, menu_item }: Props) {
-    const { data, setData, post, put, processing, errors } = useForm<MenuItem>({
-        name: menu_item?.name || '',
-        description: menu_item?.description || '',
-        price: menu_item?.price || 0,
-        category_id: menu_item?.category_id || '',
-        image_url: menu_item?.image_url || '',
-        stock_quantity: menu_item?.stock_quantity || 0,
-        is_available: menu_item?.is_available ?? true,
+    const { processing } = useInertiaForm<FormData>();
+    const [imagePreview, setImagePreview] = useState<string | null>(menu_item?.image_url as string || null);
+
+    const form = useForm<FormData>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            name: menu_item?.name || '',
+            description: menu_item?.description || '',
+            price: menu_item ? formatToIDR(menu_item.price) : 'Rp 0',
+            category_id: menu_item?.category_id || '',
+            image_url: undefined,
+            stock_quantity: menu_item?.stock_quantity || 0,
+            is_available: menu_item?.is_available ?? true,
+        },
     });
 
-    const [imagePreview, setImagePreview] = useState<string | null>(menu_item?.image_url || null);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = (values: FormData) => {
+        const formData = new FormData();
         
+        // Add all form fields to FormData
+        formData.append('name', values.name);
+        formData.append('description', values.description);
+        // Parse price from IDR format to number before sending
+        formData.append('price', parseFromIDR(values.price).toString());
+        formData.append('category_id', values.category_id);
+        formData.append('stock_quantity', values.stock_quantity.toString());
+        formData.append('is_available', values.is_available ? '1' : '0');
+
+        // Add image if it exists
+        if (values.image_url instanceof File) {
+            formData.append('image_url', values.image_url);
+        }
+
         if (menu_item?.id) {
-            put(route('admin.menu.update', menu_item.id));
+            router.post(route('admin.menu.update', menu_item.id), {
+                _method: 'PUT',
+                ...Object.fromEntries(formData),
+            }, {
+                forceFormData: true,
+            });
         } else {
-            post(route('admin.menu.store'));
+            router.post(route('admin.menu.store'), formData);
         }
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setData('image_url', file as any);
+            form.setValue('image_url', file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result as string);
@@ -90,153 +144,163 @@ export default function Form({ categories, menu_item }: Props) {
                 </div>
 
                 <div className="rounded-md border p-6">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <FormField
-                                    name="name"
-                                    render={() => (
-                                        <FormItem>
-                                            <FormLabel>Name</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    value={data.name}
-                                                    onChange={e => setData('name', e.target.value)}
-                                                    placeholder="Enter menu item name"
-                                                />
-                                            </FormControl>
-                                            {errors.name && <FormMessage>{errors.name}</FormMessage>}
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    name="description"
-                                    render={() => (
-                                        <FormItem>
-                                            <FormLabel>Description</FormLabel>
-                                            <FormControl>
-                                                <Textarea
-                                                    value={data.description}
-                                                    onChange={e => setData('description', e.target.value)}
-                                                    placeholder="Enter menu item description"
-                                                />
-                                            </FormControl>
-                                            {errors.description && <FormMessage>{errors.description}</FormMessage>}
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    name="category_id"
-                                    render={() => (
-                                        <FormItem>
-                                            <FormLabel>Category</FormLabel>
-                                            <Select
-                                                value={data.category_id}
-                                                onValueChange={value => setData('category_id', value)}
-                                            >
+                    <FormRoot {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Name</FormLabel>
                                                 <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select a category" />
-                                                    </SelectTrigger>
+                                                    <Input placeholder="Enter menu item name" {...field} />
                                                 </FormControl>
-                                                <SelectContent>
-                                                    {categories.map((category) => (
-                                                        <SelectItem key={category.id} value={category.id}>
-                                                            {category.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors.category_id && <FormMessage>{errors.category_id}</FormMessage>}
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-
-                            <div className="space-y-4">
-                                <FormField
-                                    name="price"
-                                    render={() => (
-                                        <FormItem>
-                                            <FormLabel>Price</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={data.price}
-                                                    onChange={e => setData('price', parseFloat(e.target.value))}
-                                                    placeholder="Enter price"
-                                                />
-                                            </FormControl>
-                                            {errors.price && <FormMessage>{errors.price}</FormMessage>}
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    name="stock_quantity"
-                                    render={() => (
-                                        <FormItem>
-                                            <FormLabel>Stock Quantity</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="number"
-                                                    value={data.stock_quantity}
-                                                    onChange={e => setData('stock_quantity', parseInt(e.target.value))}
-                                                    placeholder="Enter stock quantity"
-                                                />
-                                            </FormControl>
-                                            {errors.stock_quantity && <FormMessage>{errors.stock_quantity}</FormMessage>}
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    name="image"
-                                    render={() => (
-                                        <FormItem>
-                                            <FormLabel>Image</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleImageChange}
-                                                />
-                                            </FormControl>
-                                            {imagePreview && (
-                                                <img
-                                                    src={imagePreview}
-                                                    alt="Preview"
-                                                    className="mt-2 h-32 w-32 rounded-md object-cover"
-                                                />
-                                            )}
-                                            {errors.image_url && <FormMessage>{errors.image_url}</FormMessage>}
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <div className="flex items-center space-x-2">
-                                    <Switch
-                                        id="is_available"
-                                        checked={data.is_available}
-                                        onCheckedChange={checked => setData('is_available', checked)}
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
-                                    <Label htmlFor="is_available">Available</Label>
+
+                                    <FormField
+                                        control={form.control}
+                                        name="description"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Description</FormLabel>
+                                                <FormControl>
+                                                    <Textarea placeholder="Enter menu item description" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="category_id"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Category</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select a category" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {categories.map((category) => (
+                                                            <SelectItem key={category.id} value={category.id}>
+                                                                {category.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
+                                <div className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="price"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Price (IDR)</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="Enter price in Rupiah"
+                                                        {...field}
+                                                        onChange={(e) => {
+                                                            const value = e.target.value.replace(/[^0-9]/g, '');
+                                                            if (value === '') {
+                                                                field.onChange('Rp 0');
+                                                            } else {
+                                                                field.onChange(formatToIDR(parseInt(value)));
+                                                            }
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="stock_quantity"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Stock Quantity</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="Enter stock quantity"
+                                                        {...field}
+                                                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="image_url"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Image</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleImageChange}
+                                                    />
+                                                </FormControl>
+                                                {imagePreview && (
+                                                    <img
+                                                        src={imagePreview}
+                                                        alt="Preview"
+                                                        className="mt-2 h-32 w-32 rounded-md object-cover"
+                                                    />
+                                                )}
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="is_available"
+                                        render={({ field }) => (
+                                            <FormItem className="flex items-center space-x-2">
+                                                <FormControl>
+                                                    <Switch
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                                <Label>Available</Label>
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="flex justify-end">
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                            >
-                                {menu_item ? 'Update Menu Item' : 'Create Menu Item'}
-                            </Button>
-                        </div>
-                    </form>
+                            <div className="flex justify-end">
+                                <Button
+                                    type="submit"
+                                    disabled={processing}
+                                >
+                                    {menu_item ? 'Update Menu Item' : 'Create Menu Item'}
+                                </Button>
+                            </div>
+                        </form>
+                    </FormRoot>
                 </div>
             </div>
         </AdminLayout>

@@ -61,13 +61,6 @@ export default function Form({ employee }: Props) {
 
             <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                    <Button
-                        variant="outline"
-                        onClick={() => router.get(route('admin.employees.index'))}
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Employees
-                    </Button>
                     <h2 className="text-3xl font-bold tracking-tight">
                         {employee ? 'Edit' : 'Create'} Employee
                     </h2>
@@ -183,7 +176,6 @@ export default function Form({ employee }: Props) {
                             <div className="flex justify-end">
                                 <Button
                                     type="submit"
-                                    className="bg-amber-600 hover:bg-amber-700"
                                     disabled={processing}
                                 >
                                     {processing ? 'Saving...' : (employee ? 'Update' : 'Create')} Employee

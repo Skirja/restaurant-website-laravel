@@ -23,10 +23,20 @@ class MenuItem extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
+        'price' => 'decimal:0',
         'is_available' => 'boolean',
         'stock_quantity' => 'integer',
     ];
+
+    public function getFormattedPriceAttribute(): string
+    {
+        return 'Rp ' . number_format($this->price, 0, ',', '.');
+    }
+
+    public function setPriceAttribute($value)
+    {
+        $this->attributes['price'] = preg_replace('/[^0-9]/', '', $value);
+    }
 
     public function category(): BelongsTo
     {

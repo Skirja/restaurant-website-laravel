@@ -8,12 +8,20 @@ use App\Models\MenuItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class MenuController extends Controller
 {
     public function index()
     {
-        $menu_items = MenuItem::with('category')->latest()->get();
+        $menu_items = MenuItem::with('category')->latest()->get()->map(function ($item) {
+            return [
+                ...$item->toArray(),
+                'formatted_price' => $item->formatted_price,
+                'image_url' => $item->image_url
+            ];
+        });
+        
         $categories = Category::all();
 
         return Inertia::render('Admin/Menu/Index', [
@@ -33,74 +41,108 @@ class MenuController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'image_url' => 'nullable|image|max:2048',
-            'stock_quantity' => 'required|integer|min:0',
-            'is_available' => 'boolean',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'required|string',
+                'price' => 'required|numeric|min:0',
+                'category_id' => 'required|exists:categories,id',
+                'image_url' => 'nullable|image|max:2048',
+                'stock_quantity' => 'required|integer|min:0',
+                'is_available' => 'required|boolean',
+            ]);
 
-        if ($request->hasFile('image_url')) {
-            $path = $request->file('image_url')->store('menu-items', 'public');
-            $validated['image_url'] = Storage::url($path);
+            // Clean up price value
+            $validated['price'] = (float) preg_replace('/[^0-9.]/', '', $validated['price']);
+
+            if ($request->hasFile('image_url')) {
+                $path = $request->file('image_url')->store('menu-items', 'public');
+                $validated['image_url'] = $path;
+            }
+
+            MenuItem::create($validated);
+
+            return redirect()->route('admin.menu.index')
+                ->with('success', 'Menu item created successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error creating menu item: ' . $e->getMessage());
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to create menu item. Please try again.'])
+                ->withInput();
         }
-
-        MenuItem::create($validated);
-
-        return redirect()->route('admin.menu.index')
-            ->with('success', 'Menu item created successfully.');
     }
 
     public function edit(MenuItem $menu)
     {
+        $menu->price = (float)$menu->price;
         $categories = Category::all();
 
+        // Prepare menu item data with proper image URL
+        $menuData = $menu->toArray();
+        if ($menu->image_url) {
+            $menuData['image_url'] = Storage::url($menu->image_url);
+        }
+
         return Inertia::render('Admin/Menu/Form', [
-            'menu_item' => $menu,
+            'menu_item' => $menuData,
             'categories' => $categories,
         ]);
     }
 
     public function update(Request $request, MenuItem $menu)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'image_url' => 'nullable|image|max:2048',
-            'stock_quantity' => 'required|integer|min:0',
-            'is_available' => 'boolean',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'required|string',
+                'price' => 'required|numeric|min:0',
+                'category_id' => 'required|exists:categories,id',
+                'image_url' => 'nullable|image|max:2048',
+                'stock_quantity' => 'required|integer|min:0',
+                'is_available' => 'required|boolean',
+            ]);
 
-        if ($request->hasFile('image_url')) {
-            // Delete old image
-            if ($menu->image_url) {
-                Storage::delete(str_replace('/storage', 'public', $menu->image_url));
+            // Clean up price value
+            $validated['price'] = (float) preg_replace('/[^0-9.]/', '', $validated['price']);
+
+            if ($request->hasFile('image_url')) {
+                // Delete old image if exists
+                if ($menu->image_url && Storage::disk('public')->exists($menu->image_url)) {
+                    Storage::disk('public')->delete($menu->image_url);
+                }
+
+                $path = $request->file('image_url')->store('menu-items', 'public');
+                $validated['image_url'] = $path;
             }
 
-            $path = $request->file('image_url')->store('menu-items', 'public');
-            $validated['image_url'] = Storage::url($path);
+            $menu->update($validated);
+
+            return redirect()->route('admin.menu.index')
+                ->with('success', 'Menu item updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error updating menu item: ' . $e->getMessage());
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to update menu item. Please try again.'])
+                ->withInput();
         }
-
-        $menu->update($validated);
-
-        return redirect()->route('admin.menu.index')
-            ->with('success', 'Menu item updated successfully.');
     }
 
     public function destroy(MenuItem $menu)
     {
-        if ($menu->image_url) {
-            Storage::delete(str_replace('/storage', 'public', $menu->image_url));
+        try {
+            // Delete image if exists
+            if ($menu->image_url && Storage::disk('public')->exists($menu->image_url)) {
+                Storage::disk('public')->delete($menu->image_url);
+            }
+
+            $menu->delete();
+
+            return redirect()->route('admin.menu.index')
+                ->with('success', 'Menu item deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error deleting menu item: ' . $e->getMessage());
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to delete menu item. Please try again.']);
         }
-
-        $menu->delete();
-
-        return redirect()->route('admin.menu.index')
-            ->with('success', 'Menu item deleted successfully.');
     }
 }

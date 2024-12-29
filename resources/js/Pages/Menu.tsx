@@ -57,7 +57,7 @@ export default function Menu() {
                             </a>
                         </li>
                         <li>
-                            <a href="/menu" className="text-amber-100 hover:text-amber-300 transition-colors duration-300">
+                            <a href={route('menu')} className="text-amber-100 hover:text-amber-300 transition-colors duration-300">
                                 Daftar Menu
                             </a>
                         </li>
@@ -79,7 +79,7 @@ export default function Menu() {
                     </li>
                     <li className="flex flex-col items-center">
                         <List className="w-6 h-6 mb-1" />
-                        <a href="/menu" className="text-xs">Daftar Menu</a>
+                        <a href={route('menu')} className="text-xs">Daftar Menu</a>
                     </li>
                     <li className="flex flex-col items-center">
                         <User className="w-6 h-6 mb-1" />
