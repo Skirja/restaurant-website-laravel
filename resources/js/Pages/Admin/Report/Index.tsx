@@ -73,7 +73,7 @@ interface Props {
     };
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
+const COLORS = ['#F59E0B', '#D97706', '#B45309'];
 
 export default function Index({ salesData, topSellingItems, summary, orderTypes, filters }: Props) {
     const [period, setPeriod] = useState(filters.period);
@@ -168,7 +168,7 @@ export default function Index({ salesData, topSellingItems, summary, orderTypes,
                             <CardTitle>Total Orders</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-3xl font-bold">{summary.total_orders}</p>
+                            <p className="text-3xl font-bold text-amber-800">{summary.total_orders}</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -176,7 +176,7 @@ export default function Index({ salesData, topSellingItems, summary, orderTypes,
                             <CardTitle>Total Revenue</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-3xl font-bold">{formatCurrency(summary.total_revenue)}</p>
+                            <p className="text-3xl font-bold text-amber-800">{formatCurrency(summary.total_revenue)}</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -184,7 +184,7 @@ export default function Index({ salesData, topSellingItems, summary, orderTypes,
                             <CardTitle>Average Order Value</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-3xl font-bold">{formatCurrency(summary.average_order_value)}</p>
+                            <p className="text-3xl font-bold text-amber-800">{formatCurrency(summary.average_order_value)}</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -215,8 +215,8 @@ export default function Index({ salesData, topSellingItems, summary, orderTypes,
                                             }}
                                         />
                                         <Legend />
-                                        <Line type="monotone" dataKey="total_sales" name="Sales" stroke="#8884d8" />
-                                        <Line type="monotone" dataKey="total_orders" name="Orders" stroke="#82ca9d" />
+                                        <Line type="monotone" dataKey="total_sales" name="Sales" stroke="#D97706" />
+                                        <Line type="monotone" dataKey="total_orders" name="Orders" stroke="#92400E" />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>

@@ -7,6 +7,7 @@ import {
     CalendarDays,
     DollarSign
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Stats {
     total_orders: number;
@@ -40,64 +41,71 @@ export default function Dashboard({ auth, stats }: Props) {
             <Head title="Admin Dashboard" />
 
             <div className="space-y-6">
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-3xl font-bold tracking-tight text-amber-800">Dashboard</h2>
+                    <div className="flex items-center space-x-2">
+                        <span className="text-sm text-amber-600">Welcome back, {auth.user.name}</span>
+                    </div>
+                </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
+                    <Card className="border-amber-100 bg-white hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
+                            <CardTitle className="text-sm font-medium text-amber-800">
                                 Total Orders
                             </CardTitle>
-                            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                            <ShoppingCart className="h-4 w-4 text-amber-600" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_orders}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <div className="text-2xl font-bold text-amber-900">{stats.total_orders}</div>
+                            <p className="text-xs text-amber-600">
                                 +0% from last month
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="border-amber-100 bg-white hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
+                            <CardTitle className="text-sm font-medium text-amber-800">
                                 Total Customers
                             </CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <Users className="h-4 w-4 text-amber-600" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_customers}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <div className="text-2xl font-bold text-amber-900">{stats.total_customers}</div>
+                            <p className="text-xs text-amber-600">
                                 +0% from last month
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="border-amber-100 bg-white hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
+                            <CardTitle className="text-sm font-medium text-amber-800">
                                 Active Reservations
                             </CardTitle>
-                            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                            <CalendarDays className="h-4 w-4 text-amber-600" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stats.active_reservations}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <div className="text-2xl font-bold text-amber-900">{stats.active_reservations}</div>
+                            <p className="text-xs text-amber-600">
                                 +0% from last month
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="border-amber-100 bg-white hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
+                            <CardTitle className="text-sm font-medium text-amber-800">
                                 Total Revenue
                             </CardTitle>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <DollarSign className="h-4 w-4 text-amber-600" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">${stats.total_revenue}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <div className="text-2xl font-bold text-amber-900">
+                                Rp {stats.total_revenue.toLocaleString()}
+                            </div>
+                            <p className="text-xs text-amber-600">
                                 +0% from last month
                             </p>
                         </CardContent>
@@ -105,30 +113,39 @@ export default function Dashboard({ auth, stats }: Props) {
                 </div>
 
                 {/* Recent Orders */}
-                <Card>
+                <Card className="border-amber-100 bg-white">
                     <CardHeader>
-                        <CardTitle>Recent Orders</CardTitle>
+                        <CardTitle className="text-amber-800">Recent Orders</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {stats.recent_orders.length > 0 ? (
                             <div className="space-y-4">
                                 {stats.recent_orders.map((order) => (
-                                    <div key={order.id} className="flex items-center justify-between">
+                                    <div key={order.id} className="flex items-center justify-between p-4 rounded-lg hover:bg-amber-50 transition-colors">
                                         <div>
-                                            <p className="font-medium">{order.user.name}</p>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="font-medium text-amber-900">{order.user.name}</p>
+                                            <p className="text-sm text-amber-600">
                                                 {new Date(order.created_at).toLocaleDateString()}
                                             </p>
                                         </div>
-                                        <div>
-                                            <p className="font-medium">${order.total_amount}</p>
-                                            <p className="text-sm text-muted-foreground">{order.status}</p>
+                                        <div className="text-right">
+                                            <p className="font-medium text-amber-900">
+                                                Rp {order.total_amount.toLocaleString()}
+                                            </p>
+                                            <span className={cn(
+                                                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                                order.status === 'completed' && "bg-green-100 text-green-800",
+                                                order.status === 'pending' && "bg-yellow-100 text-yellow-800",
+                                                order.status === 'cancelled' && "bg-red-100 text-red-800"
+                                            )}>
+                                                {order.status}
+                                            </span>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground">No recent orders found.</p>
+                            <p className="text-sm text-amber-600">No recent orders found.</p>
                         )}
                     </CardContent>
                 </Card>

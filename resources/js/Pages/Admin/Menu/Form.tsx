@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm as useInertiaForm, router } from '@inertiajs/react';
 import { Button } from "@/Components/ui/button";
@@ -93,7 +93,7 @@ export default function Form({ categories, menu_item }: Props) {
 
     const onSubmit = (values: FormData) => {
         const formData = new FormData();
-        
+
         // Add all form fields to FormData
         formData.append('name', values.name);
         formData.append('description', values.description);
@@ -138,12 +138,12 @@ export default function Form({ categories, menu_item }: Props) {
 
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-3xl font-bold tracking-tight">
+                    <h2 className="text-3xl font-bold tracking-tight text-amber-800">
                         {menu_item ? 'Edit Menu Item' : 'Add Menu Item'}
                     </h2>
                 </div>
 
-                <div className="rounded-md border p-6">
+                <div className="rounded-md border border-amber-200 bg-white p-6">
                     <FormRoot {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
@@ -153,11 +153,15 @@ export default function Form({ categories, menu_item }: Props) {
                                         name="name"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Name</FormLabel>
+                                                <FormLabel className="text-amber-800">Name</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Enter menu item name" {...field} />
+                                                    <Input
+                                                        placeholder="Enter menu item name"
+                                                        {...field}
+                                                        className="border-amber-200 focus:border-amber-400 focus:ring-amber-400"
+                                                    />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage className="text-red-500" />
                                             </FormItem>
                                         )}
                                     />
@@ -167,11 +171,15 @@ export default function Form({ categories, menu_item }: Props) {
                                         name="description"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Description</FormLabel>
+                                                <FormLabel className="text-amber-800">Description</FormLabel>
                                                 <FormControl>
-                                                    <Textarea placeholder="Enter menu item description" {...field} />
+                                                    <Textarea
+                                                        placeholder="Enter menu item description"
+                                                        {...field}
+                                                        className="border-amber-200 focus:border-amber-400 focus:ring-amber-400"
+                                                    />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage className="text-red-500" />
                                             </FormItem>
                                         )}
                                     />
@@ -181,22 +189,26 @@ export default function Form({ categories, menu_item }: Props) {
                                         name="category_id"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Category</FormLabel>
+                                                <FormLabel className="text-amber-800">Category</FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
-                                                        <SelectTrigger>
+                                                        <SelectTrigger className="border-amber-200 focus:border-amber-400 focus:ring-amber-400">
                                                             <SelectValue placeholder="Select a category" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
                                                         {categories.map((category) => (
-                                                            <SelectItem key={category.id} value={category.id}>
+                                                            <SelectItem
+                                                                key={category.id}
+                                                                value={category.id}
+                                                                className="hover:bg-amber-50 focus:bg-amber-50"
+                                                            >
                                                                 {category.name}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
-                                                <FormMessage />
+                                                <FormMessage className="text-red-500" />
                                             </FormItem>
                                         )}
                                     />
@@ -208,23 +220,16 @@ export default function Form({ categories, menu_item }: Props) {
                                         name="price"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Price (IDR)</FormLabel>
+                                                <FormLabel className="text-amber-800">Price (IDR)</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         type="text"
                                                         placeholder="Enter price in Rupiah"
                                                         {...field}
-                                                        onChange={(e) => {
-                                                            const value = e.target.value.replace(/[^0-9]/g, '');
-                                                            if (value === '') {
-                                                                field.onChange('Rp 0');
-                                                            } else {
-                                                                field.onChange(formatToIDR(parseInt(value)));
-                                                            }
-                                                        }}
+                                                        className="border-amber-200 focus:border-amber-400 focus:ring-amber-400"
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage className="text-red-500" />
                                             </FormItem>
                                         )}
                                     />
@@ -234,16 +239,16 @@ export default function Form({ categories, menu_item }: Props) {
                                         name="stock_quantity"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Stock Quantity</FormLabel>
+                                                <FormLabel className="text-amber-800">Stock Quantity</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         type="number"
                                                         placeholder="Enter stock quantity"
                                                         {...field}
-                                                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                                        className="border-amber-200 focus:border-amber-400 focus:ring-amber-400"
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage className="text-red-500" />
                                             </FormItem>
                                         )}
                                     />
@@ -253,22 +258,23 @@ export default function Form({ categories, menu_item }: Props) {
                                         name="image_url"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Image</FormLabel>
+                                                <FormLabel className="text-amber-800">Image</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         type="file"
                                                         accept="image/*"
                                                         onChange={handleImageChange}
+                                                        className="border-amber-200 focus:border-amber-400 focus:ring-amber-400"
                                                     />
                                                 </FormControl>
                                                 {imagePreview && (
                                                     <img
                                                         src={imagePreview}
                                                         alt="Preview"
-                                                        className="mt-2 h-32 w-32 rounded-md object-cover"
+                                                        className="mt-2 h-32 w-32 rounded-md object-cover border border-amber-200"
                                                     />
                                                 )}
-                                                <FormMessage />
+                                                <FormMessage className="text-red-500" />
                                             </FormItem>
                                         )}
                                     />
@@ -282,9 +288,10 @@ export default function Form({ categories, menu_item }: Props) {
                                                     <Switch
                                                         checked={field.value}
                                                         onCheckedChange={field.onChange}
+                                                        className="data-[state=checked]:bg-amber-600"
                                                     />
                                                 </FormControl>
-                                                <Label>Available</Label>
+                                                <Label className="text-amber-800">Available</Label>
                                             </FormItem>
                                         )}
                                     />
@@ -295,6 +302,7 @@ export default function Form({ categories, menu_item }: Props) {
                                 <Button
                                     type="submit"
                                     disabled={processing}
+                                    className="bg-amber-600 hover:bg-amber-700 text-white"
                                 >
                                     {menu_item ? 'Update Menu Item' : 'Create Menu Item'}
                                 </Button>

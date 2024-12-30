@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { 
+import {
     Table,
     TableBody,
     TableCell,
@@ -87,7 +87,7 @@ export default function Show({ order }: Props) {
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Orders
                     </Button>
-                    <h2 className="text-3xl font-bold tracking-tight">
+                    <h2 className="text-3xl font-bold tracking-tight text-amber-800">
                         Order Details #{order.id.slice(0, 8)}
                     </h2>
                 </div>
@@ -100,16 +100,16 @@ export default function Show({ order }: Props) {
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-sm text-gray-500">Order Type</p>
-                                    <p className="font-medium">{order.order_type}</p>
+                                    <p className="text-sm text-amber-700">Order Type</p>
+                                    <p className="font-medium text-amber-900">{order.order_type}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-500">Status</p>
+                                    <p className="text-sm text-amber-700">Status</p>
                                     <Select
                                         defaultValue={order.status}
                                         onValueChange={handleStatusChange}
                                     >
-                                        <SelectTrigger className="w-[200px]">
+                                        <SelectTrigger className="w-[200px] border-amber-200 focus:border-amber-400 focus:ring-amber-400">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -121,13 +121,13 @@ export default function Show({ order }: Props) {
                                     </Select>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-500">Created At</p>
-                                    <p className="font-medium">{order.created_at}</p>
+                                    <p className="text-sm text-amber-700">Created At</p>
+                                    <p className="font-medium text-amber-900">{order.created_at}</p>
                                 </div>
                                 {order.estimated_delivery_time && (
                                     <div>
-                                        <p className="text-sm text-gray-500">Estimated Delivery</p>
-                                        <p className="font-medium">{order.estimated_delivery_time}</p>
+                                        <p className="text-sm text-amber-700">Estimated Delivery</p>
+                                        <p className="font-medium text-amber-900">{order.estimated_delivery_time}</p>
                                     </div>
                                 )}
                             </div>
@@ -140,21 +140,21 @@ export default function Show({ order }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="text-sm text-gray-500">Name</p>
-                                <p className="font-medium">{order.customer.name}</p>
+                                <p className="text-sm text-amber-700">Name</p>
+                                <p className="font-medium text-amber-900">{order.customer.name}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Email</p>
-                                <p className="font-medium">{order.customer.email}</p>
+                                <p className="text-sm text-amber-700">Email</p>
+                                <p className="font-medium text-amber-900">{order.customer.email}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Phone</p>
-                                <p className="font-medium">{order.customer.phone}</p>
+                                <p className="text-sm text-amber-700">Phone</p>
+                                <p className="font-medium text-amber-900">{order.customer.phone}</p>
                             </div>
                             {order.delivery_address && (
                                 <div>
-                                    <p className="text-sm text-gray-500">Delivery Address</p>
-                                    <p className="font-medium">{order.delivery_address}</p>
+                                    <p className="text-sm text-amber-700">Delivery Address</p>
+                                    <p className="font-medium text-amber-900">{order.delivery_address}</p>
                                 </div>
                             )}
                         </CardContent>
@@ -218,24 +218,24 @@ export default function Show({ order }: Props) {
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div>
-                                        <p className="text-sm text-gray-500">Payment Method</p>
-                                        <p className="font-medium">{order.payment.method}</p>
+                                        <p className="text-sm text-amber-700">Payment Method</p>
+                                        <p className="font-medium text-amber-900">{order.payment.method}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-500">Transaction ID</p>
-                                        <p className="font-medium">{order.payment.transaction_id}</p>
+                                        <p className="text-sm text-amber-700">Transaction ID</p>
+                                        <p className="font-medium text-amber-900">{order.payment.transaction_id}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-500">Status</p>
+                                        <p className="text-sm text-amber-700">Status</p>
                                         <Badge
-                                            variant={order.payment.status === 'paid' ? 'success' : 'destructive'}
+                                            className={order.payment.status === 'paid' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}
                                         >
                                             {order.payment.status}
                                         </Badge>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-500">Amount</p>
-                                        <p className="font-medium">
+                                        <p className="text-sm text-amber-700">Amount</p>
+                                        <p className="font-medium text-amber-900">
                                             Rp {order.payment.amount.toLocaleString()}
                                         </p>
                                     </div>

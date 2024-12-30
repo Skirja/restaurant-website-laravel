@@ -82,23 +82,24 @@ export default function Form({ tables }: Props) {
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Reservations
                     </Button>
-                    <h2 className="text-3xl font-bold tracking-tight">Create Reservation</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-amber-800">Create Reservation</h2>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Reservation Details</CardTitle>
+                        <CardTitle className="text-amber-800">Reservation Details</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="user_id">Customer</Label>
+                                    <Label htmlFor="user_id" className="text-amber-800">Customer</Label>
                                     <Input
                                         id="user_id"
                                         value={data.user_id}
                                         onChange={e => setData('user_id', e.target.value)}
                                         placeholder="Enter customer ID"
+                                        className="border-amber-200 focus:border-amber-400 focus:ring-amber-400"
                                     />
                                     {errors.user_id && (
                                         <p className="text-sm text-red-600">{errors.user_id}</p>
@@ -148,12 +149,12 @@ export default function Form({ tables }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="table_id">Table</Label>
+                                    <Label htmlFor="table_id" className="text-amber-800">Table</Label>
                                     <Select
                                         value={data.table_id}
                                         onValueChange={value => setData('table_id', value)}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="border-amber-200 focus:border-amber-400 focus:ring-amber-400">
                                             <SelectValue placeholder="Select a table" />
                                         </SelectTrigger>
                                         <SelectContent>

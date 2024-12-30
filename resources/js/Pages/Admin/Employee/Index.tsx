@@ -77,7 +77,7 @@ export default function Index({ employees, filters }: Props) {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <h2 className="text-3xl font-bold tracking-tight">Employee Management</h2>
-                    <Button asChild>
+                    <Button asChild className="bg-amber-600 hover:bg-amber-700">
                         <Link href={route('admin.employees.create')}>
                             <Plus className="w-4 h-4 mr-2" />
                             Add Employee
@@ -115,7 +115,7 @@ export default function Index({ employees, filters }: Props) {
                                 </select>
                             </div>
                             <div className="flex items-end">
-                                <Button type="submit">Filter</Button>
+                                <Button type="submit" className="bg-amber-600 hover:bg-amber-700">Filter</Button>
                             </div>
                         </form>
 
@@ -141,13 +141,12 @@ export default function Index({ employees, filters }: Props) {
                                             <TableCell>{employee.department}</TableCell>
                                             <TableCell>{format(new Date(employee.hire_date), 'MMM d, yyyy')}</TableCell>
                                             <TableCell>
-                                                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                                                    employee.status === 'active'
-                                                        ? 'bg-green-50 text-green-700'
-                                                        : employee.status === 'inactive'
-                                                        ? 'bg-yellow-50 text-yellow-700'
+                                                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${employee.status === 'active'
+                                                    ? 'bg-amber-50 text-amber-700'
+                                                    : employee.status === 'inactive'
+                                                        ? 'bg-amber-100 text-amber-800'
                                                         : 'bg-red-50 text-red-700'
-                                                }`}>
+                                                    }`}>
                                                     {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
                                                 </span>
                                             </TableCell>
@@ -198,7 +197,7 @@ export default function Index({ employees, filters }: Props) {
 
                         {employees.last_page > 1 && (
                             <div className="mt-4 flex items-center justify-between">
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-amber-700">
                                     Showing {(employees.current_page - 1) * employees.per_page + 1} to{' '}
                                     {Math.min(
                                         employees.current_page * employees.per_page,

@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\MenuController;
+use App\Http\Controllers\Admin\MenuController as AdminMenuController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ReservationController;
 use App\Http\Controllers\Admin\ReviewController;
@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MenuController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -26,9 +27,8 @@ Route::get('/', function () {
 // Home route for role-based redirection
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-Route::get('/menu', function () {
-    return Inertia::render('Menu');
-})->name('menu');
+// Public menu route
+Route::get('/menu', [MenuController::class, 'index'])->name('menu');
 
 Route::get('/menu-selection/{type?}', function ($type = 'takeaway') {
     return Inertia::render('MenuSelection', [
@@ -52,21 +52,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Admin Routes
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        
+
         // Menu Management
-        Route::resource('menu', MenuController::class);
-        
+        Route::resource('menu', AdminMenuController::class);
+
         // Order Management
         Route::resource('orders', OrderController::class);
-        
+
         // Reservation Management
         Route::resource('reservations', ReservationController::class);
         Route::put('reservations/{reservation}/status', [ReservationController::class, 'updateStatus'])->name('reservations.update-status');
         Route::get('reservations/check-availability', [ReservationController::class, 'checkAvailability'])->name('reservations.check-availability');
-        
+
         // Review Management
         Route::resource('reviews', ReviewController::class);
-        
+
         // Discount Management
         Route::resource('discounts', DiscountController::class);
 
@@ -79,4 +79,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

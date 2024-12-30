@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { 
+import {
     Table,
     TableBody,
     TableCell,
@@ -63,9 +63,9 @@ interface Props {
 export default function Index({ orders }: Props) {
     const getStatusColor = (status: Order['status']) => {
         const colors = {
-            pending: 'bg-yellow-100 text-yellow-800',
-            processing: 'bg-blue-100 text-blue-800',
-            completed: 'bg-green-100 text-green-800',
+            pending: 'bg-amber-100 text-amber-800',
+            processing: 'bg-amber-200 text-amber-800',
+            completed: 'bg-amber-300 text-amber-900',
             cancelled: 'bg-red-100 text-red-800',
         };
         return colors[status];
@@ -73,11 +73,11 @@ export default function Index({ orders }: Props) {
 
     const getPaymentStatusColor = (status: string) => {
         const colors: { [key: string]: string } = {
-            paid: 'bg-green-100 text-green-800',
-            pending: 'bg-yellow-100 text-yellow-800',
+            paid: 'bg-amber-300 text-amber-900',
+            pending: 'bg-amber-100 text-amber-800',
             failed: 'bg-red-100 text-red-800',
         };
-        return colors[status.toLowerCase()] || 'bg-gray-100 text-gray-800';
+        return colors[status.toLowerCase()] || 'bg-amber-50 text-amber-700';
     };
 
     const handleStatusChange = (orderId: string, status: string) => {
@@ -96,14 +96,14 @@ export default function Index({ orders }: Props) {
                 </div>
 
                 <div className="grid gap-6">
-                    <Card>
-                        <CardHeader>
+                    <Card className="border border-amber-200">
+                        <CardHeader className="bg-amber-50 hover:bg-amber-100">
                             <CardTitle>Orders List</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
+                            <Table className="border border-amber-200">
+                                <TableHeader className="bg-amber-50 hover:bg-amber-100">
+                                    <TableRow className="bg-amber-50 hover:bg-amber-100">
                                         <TableHead>Order ID</TableHead>
                                         <TableHead>Customer</TableHead>
                                         <TableHead>Type</TableHead>
@@ -114,19 +114,19 @@ export default function Index({ orders }: Props) {
                                         <TableHead className="w-[100px]">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
-                                <TableBody>
+                                <TableBody className="bg-amber-50 hover:bg-amber-100">
                                     {orders.map((order) => (
-                                        <TableRow key={order.id}>
-                                            <TableCell className="font-medium">
+                                        <TableRow key={order.id} className="bg-amber-50 hover:bg-amber-100">
+                                            <TableCell className="font-medium bg-amber-50 hover:bg-amber-100">
                                                 {order.id.slice(0, 8)}...
                                             </TableCell>
-                                            <TableCell>{order.customer_name}</TableCell>
-                                            <TableCell>
+                                            <TableCell className="bg-amber-50 hover:bg-amber-100">{order.customer_name}</TableCell>
+                                            <TableCell className="bg-amber-50 hover:bg-amber-100">
                                                 <Badge variant="secondary">
                                                     {order.order_type}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="bg-amber-50 hover:bg-amber-100">
                                                 <Select
                                                     defaultValue={order.status}
                                                     onValueChange={(value) => handleStatusChange(order.id, value)}
@@ -142,16 +142,16 @@ export default function Index({ orders }: Props) {
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
-                                            <TableCell>Rp {order.total_amount.toLocaleString()}</TableCell>
-                                            <TableCell>
+                                            <TableCell className="bg-amber-50 hover:bg-amber-100">Rp {order.total_amount.toLocaleString()}</TableCell>
+                                            <TableCell className="bg-amber-50 hover:bg-amber-100">
                                                 <Badge
                                                     className={getPaymentStatusColor(order.payment_status)}
                                                 >
                                                     {order.payment_status}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>{order.created_at}</TableCell>
-                                            <TableCell>
+                                            <TableCell className="bg-amber-50 hover:bg-amber-100">{order.created_at}</TableCell>
+                                            <TableCell className="bg-amber-50 hover:bg-amber-100">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" className="h-8 w-8 p-0">

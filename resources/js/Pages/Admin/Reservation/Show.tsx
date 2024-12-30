@@ -48,13 +48,13 @@ export default function Show({ reservation }: Props) {
     const getStatusBadgeColor = (status: string) => {
         switch (status) {
             case 'pending':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'bg-amber-100 text-amber-800';
             case 'confirmed':
-                return 'bg-green-100 text-green-800';
+                return 'bg-amber-200 text-amber-900';
             case 'cancelled':
                 return 'bg-red-100 text-red-800';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'bg-amber-50 text-amber-700';
         }
     };
 
@@ -72,7 +72,7 @@ export default function Show({ reservation }: Props) {
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Back to Reservations
                         </Button>
-                        <h2 className="text-3xl font-bold tracking-tight">Reservation Details</h2>
+                        <h2 className="text-3xl font-bold tracking-tight text-amber-800">Reservation Details</h2>
                     </div>
                     <div className="flex items-center gap-2">
                         {reservation.status === 'pending' && (
@@ -116,16 +116,16 @@ export default function Show({ reservation }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Name</p>
-                                <p className="text-lg">{reservation.customer.name}</p>
+                                <p className="text-sm font-medium text-amber-700">Name</p>
+                                <p className="text-lg text-amber-900">{reservation.customer.name}</p>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Email</p>
-                                <p className="text-lg">{reservation.customer.email}</p>
+                                <p className="text-sm font-medium text-amber-700">Email</p>
+                                <p className="text-lg text-amber-900">{reservation.customer.email}</p>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Phone</p>
-                                <p className="text-lg">{reservation.customer.phone}</p>
+                                <p className="text-sm font-medium text-amber-700">Phone</p>
+                                <p className="text-lg text-amber-900">{reservation.customer.phone}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -136,34 +136,34 @@ export default function Show({ reservation }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Status</p>
+                                <p className="text-sm font-medium text-amber-700">Status</p>
                                 <Badge className={getStatusBadgeColor(reservation.status)}>
                                     {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
                                 </Badge>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Table</p>
-                                <p className="text-lg">
+                                <p className="text-sm font-medium text-amber-700">Table</p>
+                                <p className="text-lg text-amber-900">
                                     Table {reservation.table.number} (Capacity: {reservation.table.capacity} guests)
                                 </p>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Date & Time</p>
-                                <p className="text-lg">{reservation.date} at {reservation.time}</p>
+                                <p className="text-sm font-medium text-amber-700">Date & Time</p>
+                                <p className="text-lg text-amber-900">{reservation.date} at {reservation.time}</p>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Number of Guests</p>
-                                <p className="text-lg">{reservation.guests} guests</p>
+                                <p className="text-sm font-medium text-amber-700">Number of Guests</p>
+                                <p className="text-lg text-amber-900">{reservation.guests} guests</p>
                             </div>
                             {reservation.special_requests && (
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Special Requests</p>
-                                    <p className="text-lg">{reservation.special_requests}</p>
+                                    <p className="text-sm font-medium text-amber-700">Special Requests</p>
+                                    <p className="text-lg text-amber-900">{reservation.special_requests}</p>
                                 </div>
                             )}
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Created At</p>
-                                <p className="text-lg">{reservation.created_at}</p>
+                                <p className="text-sm font-medium text-amber-700">Created At</p>
+                                <p className="text-lg text-amber-900">{reservation.created_at}</p>
                             </div>
                         </CardContent>
                     </Card>

@@ -47,7 +47,7 @@ export default function Form({ employee }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (employee?.id) {
             put(route('admin.employees.update', employee.id));
         } else {
@@ -61,25 +61,26 @@ export default function Form({ employee }: Props) {
 
             <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-3xl font-bold tracking-tight">
+                    <h2 className="text-3xl font-bold tracking-tight text-amber-800">
                         {employee ? 'Edit' : 'Create'} Employee
                     </h2>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Employee Details</CardTitle>
+                        <CardTitle className="text-amber-800">Employee Details</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Name</Label>
+                                    <Label htmlFor="name" className="text-amber-800">Name</Label>
                                     <Input
                                         id="name"
                                         value={data.name}
                                         onChange={e => setData('name', e.target.value)}
                                         placeholder="Enter employee name"
+                                        className="border-amber-200 focus:border-amber-400 focus:ring-amber-400"
                                     />
                                     {errors.name && (
                                         <p className="text-sm text-red-600">{errors.name}</p>
@@ -177,6 +178,7 @@ export default function Form({ employee }: Props) {
                                 <Button
                                     type="submit"
                                     disabled={processing}
+                                    className="bg-amber-600 hover:bg-amber-700"
                                 >
                                     {processing ? 'Saving...' : (employee ? 'Update' : 'Create')} Employee
                                 </Button>

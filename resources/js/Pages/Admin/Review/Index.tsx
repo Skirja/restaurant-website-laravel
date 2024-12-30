@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { 
+import {
     Table,
     TableBody,
     TableCell,
@@ -113,7 +113,7 @@ export default function Index({ reviews }: Props) {
                                         <TableCell>
                                             <div>
                                                 <p className="font-medium">{review.customer.name}</p>
-                                                <p className="text-sm text-gray-500">{review.customer.email}</p>
+                                                <p className="text-sm text-amber-700">{review.customer.email}</p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -124,7 +124,7 @@ export default function Index({ reviews }: Props) {
                                         </TableCell>
                                         <TableCell>
                                             <Badge
-                                                className={review.is_published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
+                                                className={review.is_published ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-700'}
                                             >
                                                 {review.is_published ? 'Published' : 'Unpublished'}
                                             </Badge>

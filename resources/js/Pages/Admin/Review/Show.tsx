@@ -53,7 +53,7 @@ export default function Show({ review }: Props) {
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Back to Reviews
                         </Button>
-                        <h2 className="text-3xl font-bold tracking-tight">Review Details</h2>
+                        <h2 className="text-3xl font-bold tracking-tight text-amber-800">Review Details</h2>
                     </div>
                     <div className="flex items-center gap-2">
                         {review.is_published ? (
@@ -94,12 +94,12 @@ export default function Show({ review }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Name</p>
-                                <p className="text-lg">{review.customer.name}</p>
+                                <p className="text-sm font-medium text-amber-700">Name</p>
+                                <p className="text-lg text-amber-900">{review.customer.name}</p>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Email</p>
-                                <p className="text-lg">{review.customer.email}</p>
+                                <p className="text-sm font-medium text-amber-700">Email</p>
+                                <p className="text-lg text-amber-900">{review.customer.email}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -110,24 +110,24 @@ export default function Show({ review }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Status</p>
+                                <p className="text-sm font-medium text-amber-700">Status</p>
                                 <Badge
-                                    className={review.is_published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
+                                    className={review.is_published ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-700'}
                                 >
                                     {review.is_published ? 'Published' : 'Unpublished'}
                                 </Badge>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Rating</p>
+                                <p className="text-sm font-medium text-amber-700">Rating</p>
                                 <p className="text-lg text-amber-500">{renderStars(review.rating)}</p>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Review Content</p>
-                                <p className="text-lg whitespace-pre-wrap">{review.content}</p>
+                                <p className="text-sm font-medium text-amber-700">Review Content</p>
+                                <p className="text-lg text-amber-900 whitespace-pre-wrap">{review.content}</p>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">Created At</p>
-                                <p className="text-lg">{review.created_at}</p>
+                                <p className="text-sm font-medium text-amber-700">Created At</p>
+                                <p className="text-lg text-amber-900">{review.created_at}</p>
                             </div>
                         </CardContent>
                     </Card>

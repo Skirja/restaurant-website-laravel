@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { 
+import {
     Table,
     TableBody,
     TableCell,
@@ -81,13 +81,13 @@ export default function Index({ reservations, tables }: Props) {
     const getStatusBadgeColor = (status: string) => {
         switch (status) {
             case 'pending':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'bg-amber-100 text-amber-800';
             case 'confirmed':
-                return 'bg-green-100 text-green-800';
+                return 'bg-amber-200 text-amber-900';
             case 'cancelled':
                 return 'bg-red-100 text-red-800';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'bg-amber-50 text-amber-700';
         }
     };
 
@@ -136,17 +136,17 @@ export default function Index({ reservations, tables }: Props) {
                                         <TableCell>
                                             <div>
                                                 <p className="font-medium">{reservation.customer.name}</p>
-                                                <p className="text-sm text-gray-500">{reservation.customer.phone}</p>
+                                                <p className="text-sm text-amber-700">{reservation.customer.phone}</p>
                                             </div>
                                         </TableCell>
-                                        <TableCell>Table {reservation.table_number}</TableCell>
+                                        <TableCell className="text-amber-800">Table {reservation.table_number}</TableCell>
                                         <TableCell>
                                             <div>
-                                                <p>{reservation.date}</p>
-                                                <p className="text-sm text-gray-500">{reservation.time}</p>
+                                                <p className="text-amber-800">{reservation.date}</p>
+                                                <p className="text-sm text-amber-700">{reservation.time}</p>
                                             </div>
                                         </TableCell>
-                                        <TableCell>{reservation.guests} guests</TableCell>
+                                        <TableCell className="text-amber-800">{reservation.guests} guests</TableCell>
                                         <TableCell>
                                             <Badge
                                                 className={getStatusBadgeColor(reservation.status)}

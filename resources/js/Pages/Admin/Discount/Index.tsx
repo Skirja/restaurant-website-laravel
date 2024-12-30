@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { 
+import {
     Table,
     TableBody,
     TableCell,
@@ -122,23 +122,23 @@ export default function Index({ discounts }: Props) {
                                             <div>
                                                 <p className="font-medium">{discount.code}</p>
                                                 {discount.description && (
-                                                    <p className="text-sm text-gray-500">{discount.description}</p>
+                                                    <p className="text-sm text-amber-700">{discount.description}</p>
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="capitalize">{discount.discount_type}</TableCell>
-                                        <TableCell>
+                                        <TableCell className="capitalize text-amber-800">{discount.discount_type}</TableCell>
+                                        <TableCell className="text-amber-800">
                                             {formatValue(discount.discount_type, discount.discount_value)}
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <p className="text-sm">From: {discount.start_date}</p>
-                                                <p className="text-sm">To: {discount.end_date}</p>
+                                                <p className="text-sm text-amber-700">From: {discount.start_date}</p>
+                                                <p className="text-sm text-amber-700">To: {discount.end_date}</p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge
-                                                variant={discount.is_active ? "success" : "secondary"}
+                                                className={discount.is_active ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-700'}
                                             >
                                                 {discount.is_active ? 'Active' : 'Inactive'}
                                             </Badge>
