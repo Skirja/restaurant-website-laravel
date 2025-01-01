@@ -25,6 +25,19 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'phone_number' => ['nullable', 'string', 'regex:/^[0-9]{10,15}$/'],
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'phone_number.regex' => 'Format nomor telepon tidak valid. Gunakan angka saja (10-15 digit).',
         ];
     }
 }

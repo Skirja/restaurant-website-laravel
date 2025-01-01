@@ -106,9 +106,15 @@ export default function Welcome({ auth }: PageProps) {
                                 </a>
                             </li>
                             <li>
-                                <a href="/login" className="text-amber-100 hover:text-amber-300 transition-colors duration-300">
-                                    Masuk/Daftar
-                                </a>
+                                {auth.user ? (
+                                    <a href={route('profile.edit')} className="text-amber-100 hover:text-amber-300 transition-colors duration-300">
+                                        {auth.user.name}
+                                    </a>
+                                ) : (
+                                    <a href="/login" className="text-amber-100 hover:text-amber-300 transition-colors duration-300">
+                                        Masuk/Daftar
+                                    </a>
+                                )}
                             </li>
                         </ul>
                     </div>
@@ -127,7 +133,7 @@ export default function Welcome({ auth }: PageProps) {
                         </li>
                         <li className="flex flex-col items-center">
                             <User className="w-6 h-6 mb-1" />
-                            <a href="/login" className="text-xs">Akun</a>
+                            <a href={auth.user ? route('profile.edit') : '/login'} className="text-xs">Akun</a>
                         </li>
                     </ul>
                 </nav>

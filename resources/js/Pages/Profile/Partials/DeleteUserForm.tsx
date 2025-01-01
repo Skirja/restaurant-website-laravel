@@ -52,40 +52,36 @@ export default function DeleteUserForm({
     return (
         <section className={`space-y-6 ${className}`}>
             <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Delete Account
+                <h2 className="text-xl font-bold text-amber-800">
+                    Hapus Akun
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Before deleting your account,
-                    please download any data or information that you wish to
-                    retain.
+                <p className="mt-1 text-sm text-amber-600">
+                    Setelah akun Anda dihapus, semua data dan informasi akan dihapus secara permanen.
+                    Sebelum menghapus akun Anda, harap unduh data atau informasi yang ingin Anda simpan.
                 </p>
             </header>
 
-            <DangerButton onClick={confirmUserDeletion}>
-                Delete Account
+            <DangerButton onClick={confirmUserDeletion} className="bg-red-600 hover:bg-red-700">
+                Hapus Akun
             </DangerButton>
 
             <Modal show={confirmingUserDeletion} onClose={closeModal}>
                 <form onSubmit={deleteUser} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900">
-                        Are you sure you want to delete your account?
+                    <h2 className="text-xl font-bold text-amber-800">
+                        Apakah Anda yakin ingin menghapus akun Anda?
                     </h2>
 
-                    <p className="mt-1 text-sm text-gray-600">
-                        Once your account is deleted, all of its resources and
-                        data will be permanently deleted. Please enter your
-                        password to confirm you would like to permanently delete
-                        your account.
+                    <p className="mt-1 text-sm text-amber-600">
+                        Setelah akun Anda dihapus, semua data dan informasi akan dihapus secara permanen.
+                        Silakan masukkan password Anda untuk mengkonfirmasi bahwa Anda ingin menghapus akun Anda secara permanen.
                     </p>
 
                     <div className="mt-6">
                         <InputLabel
                             htmlFor="password"
                             value="Password"
-                            className="sr-only"
+                            className="sr-only text-amber-800"
                         />
 
                         <TextInput
@@ -97,7 +93,7 @@ export default function DeleteUserForm({
                             onChange={(e) =>
                                 setData('password', e.target.value)
                             }
-                            className="mt-1 block w-3/4"
+                            className="mt-1 block w-3/4 border-amber-300 focus:border-amber-500 focus:ring-amber-500"
                             isFocused
                             placeholder="Password"
                         />
@@ -109,12 +105,12 @@ export default function DeleteUserForm({
                     </div>
 
                     <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeModal}>
-                            Cancel
+                        <SecondaryButton onClick={closeModal} className="bg-amber-100 hover:bg-amber-200 text-amber-800">
+                            Batal
                         </SecondaryButton>
 
-                        <DangerButton className="ms-3" disabled={processing}>
-                            Delete Account
+                        <DangerButton className="ms-3 bg-red-600 hover:bg-red-700" disabled={processing}>
+                            Hapus Akun
                         </DangerButton>
                     </div>
                 </form>

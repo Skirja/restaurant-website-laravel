@@ -64,8 +64,8 @@ export default function Register() {
 
             <div className="w-full max-w-md bg-white shadow-xl rounded-2xl overflow-hidden">
                 <div className="bg-amber-600 p-6 text-white text-center relative overflow-hidden">
-                    <div 
-                        id="pattern-background" 
+                    <div
+                        id="pattern-background"
                         className="absolute inset-0 opacity-10"
                         style={{
                             backgroundImage: 'repeating-linear-gradient(45deg, #ffffff 25%, transparent 25%, transparent 75%, #ffffff 75%, #ffffff), repeating-linear-gradient(45deg, #ffffff 25%, #ffffff 25%, #ffffff 75%, transparent 75%, transparent)',

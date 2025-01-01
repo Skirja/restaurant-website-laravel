@@ -21,6 +21,7 @@ export default function UpdateProfileInformation({
         useForm({
             name: user.name,
             email: user.email,
+            phone_number: user.phone_number || '',
         });
 
     const submit: FormEventHandler = (e) => {
@@ -32,22 +33,22 @@ export default function UpdateProfileInformation({
     return (
         <section className={className}>
             <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Profile Information
+                <h2 className="text-xl font-bold text-amber-800">
+                    Informasi Profil
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600">
-                    Update your account's profile information and email address.
+                <p className="mt-1 text-sm text-amber-600">
+                    Perbarui informasi profil, alamat email, dan nomor telepon akun Anda.
                 </p>
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
                 <div>
-                    <InputLabel htmlFor="name" value="Name" />
+                    <InputLabel htmlFor="name" value="Nama" className="text-amber-800" />
 
                     <TextInput
                         id="name"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full border-amber-300 focus:border-amber-500 focus:ring-amber-500"
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
                         required
@@ -59,12 +60,12 @@ export default function UpdateProfileInformation({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
+                    <InputLabel htmlFor="email" value="Email" className="text-amber-800" />
 
                     <TextInput
                         id="email"
                         type="email"
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full border-amber-300 focus:border-amber-500 focus:ring-amber-500"
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
                         required
@@ -74,31 +75,48 @@ export default function UpdateProfileInformation({
                     <InputError className="mt-2" message={errors.email} />
                 </div>
 
+                <div>
+                    <InputLabel htmlFor="phone_number" value="Nomor Telepon" className="text-amber-800" />
+
+                    <TextInput
+                        id="phone_number"
+                        type="tel"
+                        className="mt-1 block w-full border-amber-300 focus:border-amber-500 focus:ring-amber-500"
+                        value={data.phone_number}
+                        onChange={(e) => setData('phone_number', e.target.value)}
+                        placeholder="Contoh: 081234567890"
+                        autoComplete="tel"
+                    />
+
+                    <InputError className="mt-2" message={errors.phone_number} />
+                </div>
+
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
-                        <p className="mt-2 text-sm text-gray-800">
-                            Your email address is unverified.
+                        <p className="mt-2 text-sm text-amber-800">
+                            Alamat email Anda belum diverifikasi.
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                className="rounded-md text-sm text-amber-600 underline hover:text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
                             >
-                                Click here to re-send the verification email.
+                                Klik di sini untuk mengirim ulang email verifikasi.
                             </Link>
                         </p>
 
                         {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600">
-                                A new verification link has been sent to your
-                                email address.
+                            <div className="mt-2 text-sm font-medium text-amber-600">
+                                Link verifikasi baru telah dikirim ke alamat email Anda.
                             </div>
                         )}
                     </div>
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <PrimaryButton disabled={processing} className="bg-amber-600 hover:bg-amber-700">
+                        Simpan
+                    </PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -107,8 +125,8 @@ export default function UpdateProfileInformation({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">
-                            Saved.
+                        <p className="text-sm text-amber-600">
+                            Tersimpan.
                         </p>
                     </Transition>
                 </div>

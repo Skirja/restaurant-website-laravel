@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\PublicReservationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -29,6 +30,16 @@ Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 // Public menu route
 Route::get('/menu', [MenuController::class, 'index'])->name('menu');
+
+// Booking routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/booking-dinein', [PublicReservationController::class, 'create'])->name('reservations.create');
+    Route::post('/reservations', [PublicReservationController::class, 'store'])->name('reservations.store');
+    Route::post('/reservations/check', [PublicReservationController::class, 'checkAvailability'])->name('reservations.check');
+    Route::post('/reservations/finish', [PublicReservationController::class, 'handlePaymentFinish'])->name('reservations.finish');
+    Route::get('/reservations/error', [PublicReservationController::class, 'handlePaymentError'])->name('reservations.error');
+    Route::get('/reservations/cancel', [PublicReservationController::class, 'handlePaymentCancel'])->name('reservations.cancel');
+});
 
 Route::get('/menu-selection/{type?}', function ($type = 'takeaway') {
     return Inertia::render('MenuSelection', [
@@ -78,5 +89,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     });
 });
+
+// Midtrans callback routes (no auth required)
+Route::post('/api/midtrans/callback', [PublicReservationController::class, 'handlePaymentCallback'])->name('midtrans.callback');
+
+// Midtrans Callback Routes
+Route::post('reservations/callback', [PublicReservationController::class, 'handlePaymentCallback'])->name('reservations.callback');
 
 require __DIR__ . '/auth.php';

@@ -3,36 +3,32 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Table extends Model
 {
-    use HasFactory, HasUuids;
+    use HasUuids;
+    use HasFactory;
 
     const STATUS_AVAILABLE = 'available';
-    const STATUS_OCCUPIED = 'occupied';
     const STATUS_RESERVED = 'reserved';
+    const STATUS_OCCUPIED = 'occupied';
+    const STATUS_MAINTENANCE = 'maintenance';
 
     protected $fillable = [
         'table_number',
         'capacity',
-        'status',
+        'status'
     ];
 
-    protected $casts = [
-        'capacity' => 'integer',
-        'table_number' => 'integer',
-    ];
-
-    public static function getStatuses(): array
+    /**
+     * Get the reservations for the table.
+     */
+    public function reservations(): HasMany
     {
-        return [
-            self::STATUS_AVAILABLE,
-            self::STATUS_OCCUPIED,
-            self::STATUS_RESERVED,
-        ];
+        return $this->hasMany(Reservation::class);
     }
 
     public function isAvailable(): bool
@@ -40,15 +36,18 @@ class Table extends Model
         return $this->status === self::STATUS_AVAILABLE;
     }
 
-    public function reservations(): HasMany
+    public function isReserved(): bool
     {
-        return $this->hasMany(Reservation::class);
+        return $this->status === self::STATUS_RESERVED;
     }
 
-    public function activeReservations()
+    public function markAsAvailable(): void
     {
-        return $this->reservations()
-            ->where('status', 'confirmed')
-            ->where('reservation_date', '>=', now()->toDateString());
+        $this->update(['status' => self::STATUS_AVAILABLE]);
+    }
+
+    public function markAsReserved(): void
+    {
+        $this->update(['status' => self::STATUS_RESERVED]);
     }
 }
