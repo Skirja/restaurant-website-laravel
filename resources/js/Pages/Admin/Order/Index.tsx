@@ -80,9 +80,10 @@ export default function Index({ orders }: Props) {
         return colors[status.toLowerCase()] || 'bg-amber-50 text-amber-700';
     };
 
-    const handleStatusChange = (orderId: string, status: string) => {
+    const handleStatusChange = (orderId: string, status: string, payment_status: string) => {
         router.put(route('admin.orders.update', orderId), {
             status: status,
+            payment_status: payment_status,
         });
     };
 
@@ -96,14 +97,14 @@ export default function Index({ orders }: Props) {
                 </div>
 
                 <div className="grid gap-6">
-                    <Card className="border border-amber-200">
-                        <CardHeader className="bg-amber-50 hover:bg-amber-100">
+                    <Card className="border">
+                        <CardHeader>
                             <CardTitle>Orders List</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Table className="border border-amber-200">
-                                <TableHeader className="bg-amber-50 hover:bg-amber-100">
-                                    <TableRow className="bg-amber-50 hover:bg-amber-100">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
                                         <TableHead>Order ID</TableHead>
                                         <TableHead>Customer</TableHead>
                                         <TableHead>Type</TableHead>
@@ -114,22 +115,22 @@ export default function Index({ orders }: Props) {
                                         <TableHead className="w-[100px]">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
-                                <TableBody className="bg-amber-50 hover:bg-amber-100">
+                                <TableBody>
                                     {orders.map((order) => (
-                                        <TableRow key={order.id} className="bg-amber-50 hover:bg-amber-100">
-                                            <TableCell className="font-medium bg-amber-50 hover:bg-amber-100">
+                                        <TableRow key={order.id}>
+                                            <TableCell className="font-medium">
                                                 {order.id.slice(0, 8)}...
                                             </TableCell>
-                                            <TableCell className="bg-amber-50 hover:bg-amber-100">{order.customer_name}</TableCell>
-                                            <TableCell className="bg-amber-50 hover:bg-amber-100">
+                                            <TableCell>{order.customer_name}</TableCell>
+                                            <TableCell>
                                                 <Badge variant="secondary">
                                                     {order.order_type}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="bg-amber-50 hover:bg-amber-100">
+                                            <TableCell>
                                                 <Select
                                                     defaultValue={order.status}
-                                                    onValueChange={(value) => handleStatusChange(order.id, value)}
+                                                    onValueChange={(value) => handleStatusChange(order.id, value, order.payment_status)}
                                                 >
                                                     <SelectTrigger className="w-[130px]">
                                                         <SelectValue />
@@ -142,16 +143,16 @@ export default function Index({ orders }: Props) {
                                                     </SelectContent>
                                                 </Select>
                                             </TableCell>
-                                            <TableCell className="bg-amber-50 hover:bg-amber-100">Rp {order.total_amount.toLocaleString()}</TableCell>
-                                            <TableCell className="bg-amber-50 hover:bg-amber-100">
+                                            <TableCell>Rp {order.total_amount.toLocaleString()}</TableCell>
+                                            <TableCell>
                                                 <Badge
                                                     className={getPaymentStatusColor(order.payment_status)}
                                                 >
                                                     {order.payment_status}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="bg-amber-50 hover:bg-amber-100">{order.created_at}</TableCell>
-                                            <TableCell className="bg-amber-50 hover:bg-amber-100">
+                                            <TableCell>{order.created_at}</TableCell>
+                                            <TableCell>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" className="h-8 w-8 p-0">

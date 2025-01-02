@@ -54,7 +54,7 @@ class DiscountController extends Controller
             'max_uses' => 'required|integer|min:1',
         ]);
 
-        $validated['user_id'] = auth()->id();
+        $validated['user_id'] = $request->user()->getAuthIdentifier();
 
         Discount::create($validated);
 
@@ -109,5 +109,30 @@ class DiscountController extends Controller
 
         return redirect()->route('admin.discounts.index')
             ->with('success', 'Discount deleted successfully.');
+    }
+
+    public function validateCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string'
+        ]);
+
+        $discount = Discount::where('code', $request->code)
+            ->where('is_active', true)
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
+
+        if (!$discount) {
+            return response()->json(['error' => 'Kode diskon tidak valid'], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'discount' => [
+                'value' => (float)$discount->discount_value,
+                'type' => $discount->discount_type
+            ]
+        ]);
     }
 }

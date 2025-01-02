@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\MenuItem;
-use Carbon\Carbon;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReportController extends Controller
 {
@@ -18,36 +19,63 @@ class ReportController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
 
-        // Get sales data based on period
-        $salesData = $this->getSalesData($period, $startDate, $endDate);
-
-        // Get top selling items
-        $topSellingItems = MenuItem::select('menu_items.name', DB::raw('SUM(order_items.quantity) as total_quantity'))
-            ->join('order_items', 'menu_items.id', '=', 'order_items.menu_item_id')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.status', 'completed')
-            ->whereBetween('orders.created_at', [$startDate, $endDate])
-            ->groupBy('menu_items.id', 'menu_items.name')
-            ->orderByDesc('total_quantity')
-            ->limit(5)
+        // Query untuk sales data berdasarkan periode
+        $salesData = Order::where('status', Order::STATUS_COMPLETED)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->when($period === 'daily', function ($query) {
+                return $query->select(
+                    DB::raw('DATE(created_at) as date'),
+                    DB::raw('COUNT(*) as total_orders'),
+                    DB::raw('SUM(total_amount) as total_sales')
+                )
+                    ->groupBy(DB::raw('DATE(created_at)'));
+            })
+            ->when($period === 'monthly', function ($query) {
+                return $query->select(
+                    DB::raw('DATE_FORMAT(created_at, "%Y-%m-01") as date'),
+                    DB::raw('COUNT(*) as total_orders'),
+                    DB::raw('SUM(total_amount) as total_sales')
+                )
+                    ->groupBy(DB::raw('DATE_FORMAT(created_at, "%Y-%m")'));
+            })
+            ->when($period === 'yearly', function ($query) {
+                return $query->select(
+                    DB::raw('YEAR(created_at) as date'),
+                    DB::raw('COUNT(*) as total_orders'),
+                    DB::raw('SUM(total_amount) as total_sales')
+                )
+                    ->groupBy(DB::raw('YEAR(created_at)'));
+            })
+            ->orderBy('date')
             ->get();
 
-        // Get sales summary
-        $summary = [
-            'total_orders' => Order::where('status', 'completed')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count(),
-            'total_revenue' => Order::where('status', 'completed')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->sum('total_amount'),
-            'average_order_value' => Order::where('status', 'completed')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->avg('total_amount') ?? 0,
-        ];
+        // Query untuk top selling items
+        $topSellingItems = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
+            ->where('orders.status', Order::STATUS_COMPLETED)
+            ->whereBetween('orders.created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->select(
+                'menu_items.name',
+                DB::raw('SUM(order_items.quantity) as total_quantity')
+            )
+            ->groupBy('menu_items.id', 'menu_items.name')
+            ->orderByDesc('total_quantity')
+            ->limit(10)
+            ->get();
 
-        // Get order type distribution
-        $orderTypes = Order::where('status', 'completed')
-            ->whereBetween('created_at', [$startDate, $endDate])
+        // Query untuk summary
+        $summary = Order::where('status', Order::STATUS_COMPLETED)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->select(
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(total_amount) as total_revenue'),
+                DB::raw('AVG(total_amount) as average_order_value')
+            )
+            ->first();
+
+        // Query untuk order types
+        $orderTypes = Order::where('status', Order::STATUS_COMPLETED)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->select('order_type', DB::raw('COUNT(*) as count'))
             ->groupBy('order_type')
             ->get();
@@ -55,7 +83,11 @@ class ReportController extends Controller
         return Inertia::render('Admin/Report/Index', [
             'salesData' => $salesData,
             'topSellingItems' => $topSellingItems,
-            'summary' => $summary,
+            'summary' => [
+                'total_orders' => $summary->total_orders ?? 0,
+                'total_revenue' => $summary->total_revenue ?? 0,
+                'average_order_value' => $summary->average_order_value ?? 0,
+            ],
             'orderTypes' => $orderTypes,
             'filters' => [
                 'period' => $period,
@@ -65,78 +97,81 @@ class ReportController extends Controller
         ]);
     }
 
-    private function getSalesData($period, $startDate, $endDate)
+    public function export(Request $request)
     {
-        $query = Order::where('status', 'completed')
-            ->whereBetween('created_at', [$startDate, $endDate]);
+        $period = $request->input('period', 'daily');
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
 
-        switch ($period) {
-            case 'daily':
-                $query->select(
+        // Get the same data as index method
+        $salesData = Order::where('status', Order::STATUS_COMPLETED)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->when($period === 'daily', function ($query) {
+                return $query->select(
                     DB::raw('DATE(created_at) as date'),
                     DB::raw('COUNT(*) as total_orders'),
                     DB::raw('SUM(total_amount) as total_sales')
                 )
-                ->groupBy(DB::raw('DATE(created_at)'));
-                break;
-
-            case 'monthly':
-                $query->select(
-                    DB::raw('DATE_FORMAT(created_at, "%Y-%m") as date'),
+                    ->groupBy(DB::raw('DATE(created_at)'));
+            })
+            ->when($period === 'monthly', function ($query) {
+                return $query->select(
+                    DB::raw('DATE_FORMAT(created_at, "%Y-%m-01") as date'),
                     DB::raw('COUNT(*) as total_orders'),
                     DB::raw('SUM(total_amount) as total_sales')
                 )
-                ->groupBy(DB::raw('DATE_FORMAT(created_at, "%Y-%m")'));
-                break;
-
-            case 'yearly':
-                $query->select(
+                    ->groupBy(DB::raw('DATE_FORMAT(created_at, "%Y-%m")'));
+            })
+            ->when($period === 'yearly', function ($query) {
+                return $query->select(
                     DB::raw('YEAR(created_at) as date'),
                     DB::raw('COUNT(*) as total_orders'),
                     DB::raw('SUM(total_amount) as total_sales')
                 )
-                ->groupBy(DB::raw('YEAR(created_at)'));
-                break;
-        }
+                    ->groupBy(DB::raw('YEAR(created_at)'));
+            })
+            ->orderBy('date')
+            ->get();
 
-        return $query->orderBy('date')->get();
-    }
+        $topSellingItems = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('menu_items', 'order_items.menu_item_id', '=', 'menu_items.id')
+            ->where('orders.status', Order::STATUS_COMPLETED)
+            ->whereBetween('orders.created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->select(
+                'menu_items.name',
+                DB::raw('SUM(order_items.quantity) as total_quantity')
+            )
+            ->groupBy('menu_items.id', 'menu_items.name')
+            ->orderByDesc('total_quantity')
+            ->limit(10)
+            ->get();
 
-    public function export(Request $request)
-    {
-        $period = $request->input('period', 'daily');
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        $summary = Order::where('status', Order::STATUS_COMPLETED)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->select(
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(total_amount) as total_revenue'),
+                DB::raw('AVG(total_amount) as average_order_value')
+            )
+            ->first();
 
-        // Get sales data
-        $salesData = $this->getSalesData($period, $startDate, $endDate);
+        $orderTypes = Order::where('status', Order::STATUS_COMPLETED)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->select('order_type', DB::raw('COUNT(*) as count'))
+            ->groupBy('order_type')
+            ->get();
 
-        // Format data for export
-        $data = $salesData->map(function ($item) use ($period) {
-            return [
-                'Date' => $period === 'yearly' ? $item->date : Carbon::parse($item->date)->format('Y-m-d'),
-                'Total Orders' => $item->total_orders,
-                'Total Sales' => number_format($item->total_sales, 2),
-            ];
-        });
+        // Generate PDF
+        $pdf = PDF::loadView('reports.sales', [
+            'salesData' => $salesData,
+            'topSellingItems' => $topSellingItems,
+            'summary' => $summary,
+            'orderTypes' => $orderTypes,
+            'period' => $period,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ]);
 
-        // Generate CSV
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="sales-report.csv"',
-        ];
-
-        $callback = function () use ($data) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, array_keys($data->first()));
-
-            foreach ($data as $row) {
-                fputcsv($file, $row);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $pdf->download('sales-report.pdf');
     }
 }

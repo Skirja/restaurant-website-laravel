@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, Calendar, Clock, Mail, Phone, ShoppingBag, User } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Mail, Phone, ShoppingBag, User, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Card } from "@/Components/ui/card";
 import { Input } from "@/Components/ui/input";
@@ -17,6 +17,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/Components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/Components/ui/dialog";
+import axios from 'axios';
 
 declare global {
     interface Window {
@@ -56,7 +65,18 @@ interface Props {
     };
 }
 
+interface FormData {
+    name: string;
+    phone: string;
+    email: string;
+    pickupTime: string;
+    pickupDate?: Date;
+    notes: string;
+    discountCode: string;
+}
+
 export default function TakeawayCheckout({ clientKey, flash, auth }: Props) {
+    const { toast } = useToast();
     const [cart, setCart] = useState<CartItem[]>(() => {
         const savedCart = localStorage.getItem('cart');
         return savedCart ? JSON.parse(savedCart) : [];
@@ -66,13 +86,17 @@ export default function TakeawayCheckout({ clientKey, flash, auth }: Props) {
     const [isSnapLoaded, setIsSnapLoaded] = useState(false);
     const [isLoadingMidtrans, setIsLoadingMidtrans] = useState(false);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-    const [formData, setFormData] = useState({
-        name: auth.user?.name || '',
+    const [formData, setFormData] = useState<FormData>({
+        name: auth?.user?.name || '',
         phone: '',
-        email: auth.user?.email || '',
-        pickupDate: undefined as Date | undefined,
-        pickupTime: ''
+        email: auth?.user?.email || '',
+        pickupTime: '',
+        pickupDate: undefined,
+        notes: '',
+        discountCode: ''
     });
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [discount, setDiscount] = useState<{ value: number, type: string } | null>(null);
 
     // Load cart from localStorage
     useEffect(() => {
@@ -135,13 +159,17 @@ export default function TakeawayCheckout({ clientKey, flash, auth }: Props) {
     // Show error or success message from flash if exists
     useEffect(() => {
         if (flash?.error) {
-            alert(flash.error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: flash.error,
+            });
         }
         if (flash?.success) {
-            // Clear cart from localStorage after successful payment
-            localStorage.removeItem('cart');
-            setCart([]);
-            setShowConfirmation(true);
+            toast({
+                title: "Success",
+                description: flash.success,
+            });
         }
         if (flash?.message) {
             alert(flash.message);
@@ -154,11 +182,17 @@ export default function TakeawayCheckout({ clientKey, flash, auth }: Props) {
             setIsProcessingPayment(true);
             window.snap.pay(flash.snap_token, {
                 onSuccess: function (result) {
+                    console.log('Payment success:', result);
+                    localStorage.removeItem('cart');
                     router.post(route('takeaway.finish'), {
-                        transaction_id: result.transaction_id,
                         order_id: result.order_id,
+                        transaction_status: result.transaction_status,
+                        transaction_id: result.transaction_id,
                         payment_type: result.payment_type,
-                        transaction_status: result.transaction_status
+                    }, {
+                        onSuccess: () => {
+                            setShowConfirmation(true);
+                        }
                     });
                 },
                 onPending: function (result) {
@@ -216,11 +250,18 @@ export default function TakeawayCheckout({ clientKey, flash, auth }: Props) {
 
         try {
             const formattedDate = format(formData.pickupDate, 'yyyy-MM-dd');
+            const finalTotal = discount
+                ? totalAmount - (discount.type === 'percentage'
+                    ? (totalAmount * (discount.value / 100))
+                    : discount.value)
+                : totalAmount;
 
             router.post(route('takeaway.checkout'), {
                 ...formData,
                 pickupDate: formattedDate,
                 cart: JSON.stringify(cart),
+                discount_code: formData.discountCode,
+                total_amount: finalTotal,
             }, {
                 preserveScroll: true,
                 onError: (errors: any) => {
@@ -284,9 +325,60 @@ export default function TakeawayCheckout({ clientKey, flash, auth }: Props) {
                                 </div>
                             ))}
                             <div className="pt-4 border-t border-gray-200">
-                                <div className="flex justify-between items-center font-bold">
-                                    <span>Total</span>
-                                    <span>Rp {totalAmount.toLocaleString()}</span>
+                                <div className="space-y-4">
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Masukkan kode diskon"
+                                            value={formData.discountCode}
+                                            onChange={(e) => setFormData({ ...formData, discountCode: e.target.value })}
+                                        />
+                                        <Button
+                                            type="button"
+                                            onClick={() => {
+                                                if (formData.discountCode) {
+                                                    axios.post(route('discount.validate'), {
+                                                        code: formData.discountCode
+                                                    })
+                                                        .then(response => {
+                                                            if (response.data.success) {
+                                                                setDiscount(response.data.discount);
+                                                                toast({
+                                                                    title: "Sukses",
+                                                                    description: "Kode diskon berhasil diterapkan",
+                                                                });
+                                                            }
+                                                        })
+                                                        .catch(() => {
+                                                            setDiscount(null);
+                                                            toast({
+                                                                variant: "destructive",
+                                                                title: "Error",
+                                                                description: "Kode diskon tidak valid",
+                                                            });
+                                                        });
+                                                }
+                                            }}
+                                            variant="outline"
+                                        >
+                                            Terapkan
+                                        </Button>
+                                    </div>
+                                    {discount && (
+                                        <div className="flex justify-between items-center text-green-600">
+                                            <span>Diskon</span>
+                                            <span>-Rp {(discount.type === 'percentage'
+                                                ? (totalAmount * (discount.value / 100))
+                                                : discount.value).toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center font-bold">
+                                        <span>Total</span>
+                                        <span>Rp {(discount
+                                            ? totalAmount - (discount.type === 'percentage'
+                                                ? (totalAmount * (discount.value / 100))
+                                                : discount.value)
+                                            : totalAmount).toLocaleString()}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -411,12 +503,14 @@ export default function TakeawayCheckout({ clientKey, flash, auth }: Props) {
             {showConfirmation && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <Card className="max-w-md w-full p-6 text-center">
-                        <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-amber-600" />
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
+                            <CheckCircle2 className="h-6 w-6 text-green-600" />
+                        </div>
                         <h2 className="text-2xl font-bold text-amber-800 mb-4">
                             Pembayaran Berhasil!
                         </h2>
                         <p className="text-gray-600 mb-6">
-                            Terima kasih telah melakukan pemesanan. Pesanan Anda akan segera diproses.
+                            Terima kasih telah melakukan pemesanan. Pesanan Anda akan segera diproses dan dapat diambil sesuai jadwal.
                         </p>
                         <Button
                             onClick={() => {

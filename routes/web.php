@@ -17,6 +17,7 @@ use App\Models\MenuItem;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\DeliveryController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -80,10 +81,6 @@ Route::middleware(['auth'])->group(function () {
 
 Route::post('/takeaway/callback', [TakeawayController::class, 'handlePaymentCallback'])->name('takeaway.callback');
 
-Route::get('/delivery-checkout', function () {
-    return Inertia::render('DeliveryCheckout');
-})->name('delivery-checkout');
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -124,5 +121,19 @@ Route::post('/api/midtrans/callback', [PublicReservationController::class, 'hand
 
 // Midtrans Callback Routes
 Route::post('reservations/callback', [PublicReservationController::class, 'handlePaymentCallback'])->name('reservations.callback');
+
+// Delivery routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/delivery-checkout', [DeliveryController::class, 'create'])->name('delivery-checkout');
+    Route::post('/delivery-checkout', [DeliveryController::class, 'checkout'])->name('delivery.checkout');
+    Route::post('/delivery/finish', [DeliveryController::class, 'handlePaymentFinish'])->name('delivery.finish');
+    Route::get('/delivery/error', [DeliveryController::class, 'handlePaymentError'])->name('delivery.error');
+    Route::get('/delivery/cancel', [DeliveryController::class, 'handlePaymentCancel'])->name('delivery.cancel');
+});
+
+// Delivery callback route
+Route::post('/delivery/callback', [DeliveryController::class, 'handlePaymentCallback'])->name('delivery.callback');
+
+Route::post('/discount/validate', [DiscountController::class, 'validateCode'])->name('discount.validate');
 
 require __DIR__ . '/auth.php';

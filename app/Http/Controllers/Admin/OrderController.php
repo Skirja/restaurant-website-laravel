@@ -62,7 +62,7 @@ class OrderController extends Controller
                 'discount_amount' => $order->discount_amount,
                 'payment_status' => $order->payment_status,
                 'delivery_address' => $order->delivery_address,
-                'estimated_delivery_time' => $order->estimated_delivery_time?->format('Y-m-d H:i:s'),
+                'estimated_delivery_time' => $order->estimated_delivery_time,
                 'created_at' => $order->created_at->format('Y-m-d H:i:s'),
                 'items' => $order->items->map(function ($item) {
                     return [
@@ -87,12 +87,11 @@ class OrderController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:pending,processing,completed,cancelled',
             'payment_status' => 'required|string',
-            'estimated_delivery_time' => 'nullable|date',
         ]);
 
         $order->update($validated);
 
-        return redirect()->back()->with('success', 'Order status updated successfully.');
+        return redirect()->back();
     }
 
     public function destroy(Order $order)

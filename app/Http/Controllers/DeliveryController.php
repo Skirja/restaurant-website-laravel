@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Discount;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +15,7 @@ use Midtrans\Config;
 use Midtrans\Snap;
 use Midtrans\Notification;
 
-class TakeawayController extends Controller
+class DeliveryController extends Controller
 {
     // Order status constants
     const STATUS_PENDING = 'pending';
@@ -43,12 +45,12 @@ class TakeawayController extends Controller
                 'User-Agent: Midtrans-PHP/1.0'
             ],
         ];
-        Config::$overrideNotifUrl = route('midtrans.callback');
+        Config::$overrideNotifUrl = route('delivery.callback');
     }
 
     public function create()
     {
-        return Inertia::render('TakeawayCheckout', [
+        return Inertia::render('DeliveryCheckout', [
             'clientKey' => config('services.midtrans.client_key'),
             'flash' => [
                 'error' => session('error'),
@@ -68,95 +70,121 @@ class TakeawayController extends Controller
 
     public function checkout(Request $request)
     {
-        try {
-            $cart = json_decode($request->cart, true);
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
-            $request->validate([
-                'name' => 'required|string',
-                'phone' => 'required|string',
-                'email' => 'required|email',
-                'pickupDate' => 'required|date',
-                'pickupTime' => 'required|string',
+        $request->validate([
+            'name' => 'required|string',
+            'phone' => 'required|string',
+            'email' => 'required|email',
+            'address' => 'required|string',
+            'notes' => 'nullable|string',
+            'deliveryTime' => 'required|string',
+            'cart' => 'required|string',
+            'discount_code' => 'nullable|string'
+        ]);
+
+        $cart = json_decode($request->cart, true);
+        $originalTotal = collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']);
+        $total = $originalTotal;
+        $discountAmount = 0;
+        $discount = null;
+
+        if ($request->discount_code) {
+            $discount = Discount::where('code', $request->discount_code)
+                ->where('is_active', true)
+                ->where('start_date', '<=', now())
+                ->where('end_date', '>=', now())
+                ->first();
+
+            if ($discount) {
+                $discountAmount = $discount->type === 'percentage'
+                    ? (int)($originalTotal * $discount->value / 100)
+                    : (int)$discount->value;
+                $total = $originalTotal - $discountAmount;
+            }
+        }
+
+        DB::beginTransaction();
+        try {
+            $order = Order::create([
+                'user_id' => $user->getAuthIdentifier(),
+                'order_type' => 'delivery',
+                'status' => Order::STATUS_PENDING,
+                'total_amount' => $request->total_amount,
+                'payment_status' => 'pending',
+                'delivery_address' => $request->address,
+                'estimated_delivery_time' => $request->deliveryTime,
+                'discount_code' => $discount ? $discount->code : null,
+                'discount_amount' => $discountAmount
             ]);
 
-            // Validate cart data
-            if (!is_array($cart) || empty($cart)) {
-                return back()->with('error', 'Keranjang belanja tidak valid');
-            }
-
             foreach ($cart as $item) {
-                if (!isset($item['id']) || !isset($item['quantity']) || !isset($item['price'])) {
-                    return back()->with('error', 'Data item dalam keranjang tidak lengkap');
-                }
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'menu_item_id' => $item['id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['price'],
+                    'subtotal' => $item['price'] * $item['quantity']
+                ]);
             }
 
-            DB::beginTransaction();
-            try {
-                // Create order
-                $order = Order::create([
-                    'user_id' => Auth::id(),
-                    'order_type' => Order::TYPE_TAKEAWAY,
-                    'status' => Order::STATUS_PENDING,
-                    'total_amount' => collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']),
-                    'payment_status' => Payment::STATUS_PENDING,
-                ]);
+            DB::commit();
 
-                // Create order items
-                foreach ($cart as $item) {
-                    $order->items()->create([
-                        'menu_item_id' => $item['id'],
+            // Set your Merchant Server Key
+            Config::$serverKey = config('services.midtrans.server_key');
+            // Set to Development/Sandbox Environment (default). Set to true for Production Environment (accept real transaction).
+            Config::$isProduction = config('services.midtrans.is_production', false);
+            // Set sanitization on (default)
+            Config::$isSanitized = true;
+            // Set 3DS transaction for credit card to true
+            Config::$is3ds = true;
+
+            $params = array(
+                'transaction_details' => array(
+                    'order_id' => 'ORDER-' . $order->id,
+                    'gross_amount' => (int) $request->total_amount,
+                ),
+                'customer_details' => array(
+                    'first_name' => $request->name,
+                    'email' => $request->email,
+                    'phone' => $request->phone,
+                ),
+                'item_details' => array_merge(
+                    collect($cart)->map(fn($item) => [
+                        'id' => $item['id'],
+                        'price' => (int) $item['price'],
                         'quantity' => $item['quantity'],
-                        'unit_price' => $item['price'],
-                        'subtotal' => $item['price'] * $item['quantity'],
-                    ]);
-                }
+                        'name' => $item['name'],
+                    ])->toArray(),
+                    $request->total_amount < collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']) ? [[
+                        'id' => 'DISCOUNT',
+                        'price' => (int) ($request->total_amount - collect($cart)->sum(fn($item) => $item['price'] * $item['quantity'])),
+                        'quantity' => 1,
+                        'name' => 'Discount',
+                    ]] : []
+                ),
+                'enabled_payments' => [
+                    'credit_card',
+                    'bca_va',
+                    'bni_va',
+                    'bri_va',
+                    'gopay',
+                    'shopeepay'
+                ],
+                'callbacks' => [
+                    'finish' => route('delivery.finish'),
+                    'error' => route('delivery.error'),
+                    'cancel' => route('delivery.cancel'),
+                ],
+            );
 
-                // Set up Midtrans payment
-                $params = [
-                    'transaction_details' => [
-                        'order_id' => 'ORDER-' . $order->id,
-                        'gross_amount' => (int) $request->total_amount,
-                    ],
-                    'customer_details' => [
-                        'first_name' => $request->name,
-                        'email' => $request->email,
-                        'phone' => $request->phone,
-                    ],
-                    'item_details' => array_merge(
-                        collect($cart)->map(fn($item) => [
-                            'id' => $item['id'],
-                            'price' => (int) $item['price'],
-                            'quantity' => $item['quantity'],
-                            'name' => $item['name'],
-                        ])->toArray(),
-                        $request->total_amount < collect($cart)->sum(fn($item) => $item['price'] * $item['quantity']) ? [[
-                            'id' => 'DISCOUNT',
-                            'price' => (int) ($request->total_amount - collect($cart)->sum(fn($item) => $item['price'] * $item['quantity'])),
-                            'quantity' => 1,
-                            'name' => 'Discount',
-                        ]] : []
-                    ),
-                    'enabled_payments' => [
-                        'credit_card',
-                        'bca_va',
-                        'bni_va',
-                        'bri_va',
-                        'gopay',
-                        'shopeepay'
-                    ],
-                    'callbacks' => [
-                        'finish' => route('takeaway.finish'),
-                        'error' => route('takeaway.error'),
-                        'cancel' => route('takeaway.cancel'),
-                    ],
-                ];
-
-                Log::info('Midtrans Parameters:', $params);
-
+            try {
+                // Get Snap Payment Page URL
                 $snapToken = Snap::getSnapToken($params);
                 Log::info('Snap Token Generated:', ['token' => $snapToken]);
-
-                DB::commit();
 
                 return back()->with([
                     'snap_token' => $snapToken,
@@ -164,7 +192,6 @@ class TakeawayController extends Controller
                     'order_id' => $order->id
                 ]);
             } catch (\Exception $e) {
-                DB::rollBack();
                 Log::error('Midtrans Snap Token Error:', [
                     'message' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
@@ -173,12 +200,12 @@ class TakeawayController extends Controller
                 return back()->with('error', 'Terjadi kesalahan saat memproses pembayaran: ' . $e->getMessage());
             }
         } catch (\Exception $e) {
-            Log::error('Takeaway Order Error:', [
-                'message' => $e->getMessage(),
+            DB::rollBack();
+            Log::error('Error in payment callback transaction:', [
+                'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
-            return back()->with('error', 'Terjadi kesalahan saat memproses pembayaran: ' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -296,7 +323,7 @@ class TakeawayController extends Controller
             $order = Order::find($orderId);
             if (!$order) {
                 Log::error('Order not found:', ['order_id' => $orderId]);
-                return redirect()->route('takeaway-checkout')
+                return redirect()->route('delivery-checkout')
                     ->with('error', 'Pesanan tidak ditemukan.');
             }
 
@@ -331,7 +358,7 @@ class TakeawayController extends Controller
 
                 DB::commit();
 
-                return redirect()->route('takeaway-checkout')
+                return redirect()->route('delivery-checkout')
                     ->with('success', 'Pembayaran berhasil diproses. Terima kasih atas pesanan Anda.');
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -347,7 +374,7 @@ class TakeawayController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return redirect()->route('takeaway-checkout')
+            return redirect()->route('delivery-checkout')
                 ->with('error', 'Terjadi kesalahan saat memproses konfirmasi pembayaran.');
         }
     }
@@ -365,7 +392,7 @@ class TakeawayController extends Controller
             }
         }
 
-        return redirect()->route('takeaway-checkout')
+        return redirect()->route('delivery-checkout')
             ->with('error', 'Pembayaran gagal. Silakan coba lagi.');
     }
 
@@ -382,7 +409,7 @@ class TakeawayController extends Controller
             }
         }
 
-        return redirect()->route('takeaway-checkout')
+        return redirect()->route('delivery-checkout')
             ->with('error', 'Pembayaran dibatalkan. Silakan coba lagi jika ingin melanjutkan pesanan.');
     }
 }

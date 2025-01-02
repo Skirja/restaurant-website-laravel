@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Reservation;
 use App\Models\Table;
 use App\Models\Payment;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,17 @@ use Midtrans\Notification;
 class PublicReservationController extends Controller
 {
     const BOOKING_FEE = 100000; // Rp. 100.000
+
+    // Order status constants
+    const STATUS_PENDING = 'pending';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_CANCELLED = 'cancelled';
+
+    // Payment status constants
+    const PAYMENT_PENDING = 'pending';
+    const PAYMENT_SUCCESS = 'success';
+    const PAYMENT_FAILED = 'failed';
 
     public function __construct()
     {
@@ -341,21 +353,21 @@ class PublicReservationController extends Controller
         try {
             Log::info('Payment finish callback received:', $request->all());
 
-            // Extract order ID from the request (format: BOOKING-{uuid})
+            // Extract order ID from the request (format: ORDER-{uuid})
             $orderId = $request->order_id;
-            $reservationId = str_replace('BOOKING-', '', $orderId);
+            $orderId = str_replace('ORDER-', '', $orderId);
 
-            Log::info('Processing reservation:', [
-                'reservation_id' => $reservationId,
+            Log::info('Processing order:', [
+                'order_id' => $orderId,
                 'transaction_status' => $request->transaction_status
             ]);
 
-            // Find reservation
-            $reservation = Reservation::find($reservationId);
-            if (!$reservation) {
-                Log::error('Reservation not found:', ['reservation_id' => $reservationId]);
+            // Find order
+            $order = Order::find($orderId);
+            if (!$order) {
+                Log::error('Order not found:', ['order_id' => $orderId]);
                 return redirect()->route('reservations.create')
-                    ->with('error', 'Reservasi tidak ditemukan.');
+                    ->with('error', 'Pesanan tidak ditemukan.');
             }
 
             DB::beginTransaction();
@@ -364,8 +376,8 @@ class PublicReservationController extends Controller
                 $payment = Payment::updateOrCreate(
                     ['transaction_id' => $request->transaction_id],
                     [
-                        'order_id' => $request->order_id,
-                        'amount' => self::BOOKING_FEE,
+                        'order_id' => $orderId,
+                        'amount' => $order->total_amount,
                         'payment_method' => $request->payment_type ?? 'unknown',
                         'status' => $request->transaction_status
                     ]
@@ -373,23 +385,17 @@ class PublicReservationController extends Controller
 
                 Log::info('Payment record created/updated:', ['payment' => $payment->toArray()]);
 
-                // Update reservation status based on payment status
+                // Update order status based on payment status
                 if (in_array($request->transaction_status, ['capture', 'settlement'])) {
-                    $reservation->update([
-                        'status' => 'confirmed',
+                    $order->update([
+                        'status' => self::STATUS_COMPLETED,
+                        'payment_status' => self::PAYMENT_SUCCESS,
                         'payment_id' => $payment->id
                     ]);
 
-                    // Update table status
-                    $table = Table::find($reservation->table_id);
-                    if ($table) {
-                        $table->update(['status' => 'reserved']);
-                    }
-
-                    Log::info('Reservation confirmed:', [
-                        'reservation_id' => $reservation->id,
-                        'payment_id' => $payment->id,
-                        'table_id' => $table->id ?? null
+                    Log::info('Order completed:', [
+                        'order_id' => $order->id,
+                        'payment_id' => $payment->id
                     ]);
                 }
 

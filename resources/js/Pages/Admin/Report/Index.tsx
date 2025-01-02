@@ -208,7 +208,10 @@ export default function Index({ salesData, topSellingItems, summary, orderTypes,
                                         />
                                         <YAxis />
                                         <Tooltip
-                                            formatter={(value: number) => formatCurrency(value)}
+                                            formatter={(value: number, name: string) => {
+                                                if (name === 'Orders') return value;
+                                                return formatCurrency(value);
+                                            }}
                                             labelFormatter={date => {
                                                 if (period === 'yearly') return `Year ${date}`;
                                                 return format(new Date(date), period === 'monthly' ? 'MMMM yyyy' : 'dd MMMM yyyy');
