@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('code')->unique();
             $table->text('description')->nullable();
-            $table->string('discount_type'); // percentage, fixed
+            $table->string('discount_type');
             $table->decimal('discount_value', 10, 2);
             $table->date('start_date');
             $table->date('end_date');

@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained()->onDelete('cascade');
-            $table->string('order_type'); // dine-in, takeaway, delivery
-            $table->string('status')->default('pending'); // pending, processing, completed, cancelled
+            $table->string('order_type');
+            $table->string('status')->default('pending');
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->decimal('discount_amount', 10, 2)->default(0);
             $table->string('discount_code')->nullable();

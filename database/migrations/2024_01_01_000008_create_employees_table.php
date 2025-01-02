@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('department');
             $table->date('hire_date');
             $table->date('out_date')->nullable();
-            $table->string('status')->default('active'); // active, inactive, terminated
+            $table->string('status')->default('active');
             $table->timestamps();
         });
     }

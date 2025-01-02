@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('reservation_date');
             $table->time('reservation_time');
             $table->integer('number_of_guests');
-            $table->string('status')->default('pending'); // pending, confirmed, cancelled, completed, no_show
+            $table->string('status')->default('pending');
             $table->text('special_requests')->nullable();
             $table->timestamp('cancelled_at')->nullable();
             $table->string('cancellation_reason')->nullable();

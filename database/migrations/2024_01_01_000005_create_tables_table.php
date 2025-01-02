@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->integer('table_number')->unique();
             $table->integer('capacity');
-            $table->string('status')->default('available'); // available, occupied, reserved
+            $table->string('status')->default('available');
             $table->timestamps();
         });
     }
