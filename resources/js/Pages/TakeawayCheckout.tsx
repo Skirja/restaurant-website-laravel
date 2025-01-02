@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Clock, Mail, Phone, ShoppingBag, User } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Card } from "@/Components/ui/card";
@@ -18,16 +18,169 @@ import {
     SelectValue,
 } from "@/Components/ui/select";
 
-export default function TakeawayCheckout() {
+declare global {
+    interface Window {
+        snap: {
+            pay: (token: string, options: {
+                onSuccess: (result: any) => void;
+                onPending: (result: any) => void;
+                onError: (result: any) => void;
+                onClose: () => void;
+                language?: string;
+            }) => void;
+        };
+    }
+}
+
+interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    [key: string]: string | number;
+}
+
+interface Props {
+    clientKey: string;
+    flash: {
+        snap_token?: string;
+        error?: string;
+        success?: boolean;
+        message?: string;
+    };
+    auth: {
+        user: {
+            name: string;
+            email: string;
+        } | null;
+    };
+}
+
+export default function TakeawayCheckout({ clientKey, flash, auth }: Props) {
+    const [cart, setCart] = useState<CartItem[]>(() => {
+        const savedCart = localStorage.getItem('cart');
+        return savedCart ? JSON.parse(savedCart) : [];
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
+    const [isSnapLoaded, setIsSnapLoaded] = useState(false);
+    const [isLoadingMidtrans, setIsLoadingMidtrans] = useState(false);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [formData, setFormData] = useState({
-        name: '',
+        name: auth.user?.name || '',
         phone: '',
-        email: '',
+        email: auth.user?.email || '',
         pickupDate: undefined as Date | undefined,
         pickupTime: ''
     });
+
+    // Load cart from localStorage
+    useEffect(() => {
+        const savedCart = localStorage.getItem('cart');
+        if (savedCart) {
+            setCart(JSON.parse(savedCart));
+        }
+    }, []);
+
+    // Calculate total
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Load Midtrans script
+    useEffect(() => {
+        let scriptElement: HTMLScriptElement | null = null;
+
+        const loadMidtransScript = () => {
+            setIsLoadingMidtrans(true);
+
+            // Remove existing script if any
+            const existingScript = document.querySelector('script[src*="snap.js"]');
+            if (existingScript) {
+                document.head.removeChild(existingScript);
+            }
+
+            // Create new script element
+            scriptElement = document.createElement('script');
+            scriptElement.src = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true'
+                ? 'https://app.midtrans.com/snap/snap.js'
+                : 'https://app.sandbox.midtrans.com/snap/snap.js';
+            scriptElement.setAttribute('data-client-key', clientKey);
+            scriptElement.async = true;
+
+            // Add event listeners
+            scriptElement.onload = () => {
+                setIsSnapLoaded(true);
+                setIsLoadingMidtrans(false);
+            };
+
+            scriptElement.onerror = (error) => {
+                setIsSnapLoaded(false);
+                setIsLoadingMidtrans(false);
+                alert('Gagal memuat sistem pembayaran. Silakan muat ulang halaman.');
+            };
+
+            // Append script to document
+            document.head.appendChild(scriptElement);
+        };
+
+        loadMidtransScript();
+
+        // Cleanup function
+        return () => {
+            if (scriptElement && document.head.contains(scriptElement)) {
+                document.head.removeChild(scriptElement);
+            }
+        };
+    }, [clientKey]);
+
+    // Show error or success message from flash if exists
+    useEffect(() => {
+        if (flash?.error) {
+            alert(flash.error);
+        }
+        if (flash?.success) {
+            // Clear cart from localStorage after successful payment
+            localStorage.removeItem('cart');
+            setCart([]);
+            setShowConfirmation(true);
+        }
+        if (flash?.message) {
+            alert(flash.message);
+        }
+    }, [flash]);
+
+    // Process snap token if available
+    useEffect(() => {
+        if (flash?.snap_token && isSnapLoaded && !isProcessingPayment) {
+            setIsProcessingPayment(true);
+            window.snap.pay(flash.snap_token, {
+                onSuccess: function (result) {
+                    router.post(route('takeaway.finish'), {
+                        transaction_id: result.transaction_id,
+                        order_id: result.order_id,
+                        payment_type: result.payment_type,
+                        transaction_status: result.transaction_status
+                    });
+                },
+                onPending: function (result) {
+                    alert('Pembayaran pending, silakan selesaikan pembayaran Anda');
+                    setIsProcessingPayment(false);
+                },
+                onError: function (result) {
+                    router.get(route('takeaway.error'));
+                    alert('Pembayaran gagal, silakan coba lagi');
+                    setIsProcessingPayment(false);
+                },
+                onClose: function () {
+                    if (!showConfirmation) {
+                        router.get(route('takeaway.cancel'));
+                        alert('Anda menutup popup pembayaran sebelum menyelesaikan pembayaran');
+                    }
+                    setIsProcessingPayment(false);
+                },
+                language: 'id'
+            });
+        }
+    }, [flash?.snap_token, isSnapLoaded]);
 
     // Generate time slots from 10:00 to 21:00
     const timeSlots = Array.from({ length: 23 }, (_, i) => {
@@ -38,18 +191,50 @@ export default function TakeawayCheckout() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (cart.length === 0) {
+            alert('Keranjang belanja kosong');
+            return;
+        }
+
+        if (!isSnapLoaded) {
+            alert('Sistem pembayaran belum siap. Mohon tunggu sebentar.');
+            return;
+        }
+
+        if (isProcessingPayment) {
+            alert('Pembayaran sedang diproses. Mohon tunggu.');
+            return;
+        }
+
+        if (!formData.pickupDate) {
+            alert('Tanggal pengambilan harus diisi');
+            return;
+        }
+
         setIsSubmitting(true);
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            const formattedDate = format(formData.pickupDate, 'yyyy-MM-dd');
 
-        setIsSubmitting(false);
-        setShowConfirmation(true);
-    };
-
-    const handlePayment = () => {
-        setShowConfirmation(false);
-        alert('Redirecting to payment...');
+            router.post(route('takeaway.checkout'), {
+                ...formData,
+                pickupDate: formattedDate,
+                cart: JSON.stringify(cart),
+            }, {
+                preserveScroll: true,
+                onError: (errors: any) => {
+                    alert('Terjadi kesalahan saat memproses permintaan.');
+                    setIsSubmitting(false);
+                },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                }
+            });
+        } catch (error) {
+            alert('Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.');
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -82,6 +267,32 @@ export default function TakeawayCheckout() {
                     </p>
                 </div>
 
+                {/* Cart Summary */}
+                <div className="p-6 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold mb-4 text-amber-800">Ringkasan Pesanan</h2>
+                    {cart.length === 0 ? (
+                        <p className="text-gray-500">Keranjang belanja kosong</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {cart.map((item) => (
+                                <div key={item.id} className="flex justify-between items-center">
+                                    <div>
+                                        <p className="font-medium">{item.name}</p>
+                                        <p className="text-sm text-gray-500">{item.quantity}x @ Rp {item.price.toLocaleString()}</p>
+                                    </div>
+                                    <p className="font-medium">Rp {(item.price * item.quantity).toLocaleString()}</p>
+                                </div>
+                            ))}
+                            <div className="pt-4 border-t border-gray-200">
+                                <div className="flex justify-between items-center font-bold">
+                                    <span>Total</span>
+                                    <span>Rp {totalAmount.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2">
@@ -93,6 +304,7 @@ export default function TakeawayCheckout() {
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             required
+                            disabled
                         />
                     </div>
 
@@ -121,6 +333,7 @@ export default function TakeawayCheckout() {
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             required
+                            disabled
                         />
                     </div>
 
@@ -186,30 +399,33 @@ export default function TakeawayCheckout() {
 
                     <Button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isProcessingPayment || isLoadingMidtrans || !isSnapLoaded || cart.length === 0}
                         className="w-full bg-amber-600 hover:bg-amber-700"
                     >
-                        {isSubmitting ? 'Memproses...' : 'Bayar'}
+                        {isSubmitting || isProcessingPayment ? 'Memproses...' : `Bayar Rp ${totalAmount.toLocaleString()}`}
                     </Button>
                 </form>
             </Card>
 
-            {/* Confirmation Popup */}
+            {/* Success Confirmation */}
             {showConfirmation && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <Card className="max-w-md w-full p-6 text-center">
                         <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-amber-600" />
                         <h2 className="text-2xl font-bold text-amber-800 mb-4">
-                            Siap untuk Membayar?
+                            Pembayaran Berhasil!
                         </h2>
                         <p className="text-gray-600 mb-6">
-                            Pesanan Anda telah dikonfirmasi. Silakan lanjutkan ke pembayaran untuk menyelesaikan proses takeaway Anda.
+                            Terima kasih telah melakukan pemesanan. Pesanan Anda akan segera diproses.
                         </p>
                         <Button
-                            onClick={handlePayment}
+                            onClick={() => {
+                                setShowConfirmation(false);
+                                router.visit('/');
+                            }}
                             className="w-full bg-amber-600 hover:bg-amber-700"
                         >
-                            Ok, Lanjutkan ke Pembayaran
+                            Kembali ke Beranda
                         </Button>
                     </Card>
                 </div>

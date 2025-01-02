@@ -5,36 +5,41 @@ import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 
 interface MenuItem {
-    id: number;
+    id: string;
     name: string;
-    category: string;
+    category: {
+        id: string;
+        name: string;
+    };
     price: number;
-    image: string;
+    image_url: string | null;
+    description: string;
+    stock_quantity: number;
+    is_available: boolean;
 }
 
 interface CartItem extends MenuItem {
     quantity: number;
 }
 
-const menuItems: MenuItem[] = [
-    { id: 1, name: 'Rendang', category: 'Daging', price: 45000, image: '/assets/rendang.jpg' },
-    { id: 2, name: 'Ayam Pop', category: 'Ayam', price: 35000, image: '/assets/ayam-pop.jpg' },
-    { id: 3, name: 'Gulai Ikan', category: 'Ikan', price: 40000, image: '/assets/gulai-ikan.jpg' },
-    { id: 4, name: 'Ayam Bakar Padang', category: 'Ayam', price: 38000, image: '/assets/ayam-bakar-padang.jpg' },
-    { id: 5, name: 'Dendeng Batokok', category: 'Daging', price: 50000, image: '/assets/dendeng-batokok.jpg' },
-    { id: 6, name: 'Sayur Nangka', category: 'Sayur', price: 25000, image: '/assets/sayur-nangka.jpg' },
-    { id: 7, name: 'Kalio', category: 'Daging', price: 48000, image: '/assets/kalio.jpg' },
-    { id: 8, name: 'Paru Goreng', category: 'Daging', price: 35000, image: '/assets/paru-goreng.jpg' },
-    { id: 9, name: 'Perkedel', category: 'Sayur', price: 8000, image: '/assets/perkedel.jpg' },
-    { id: 10, name: 'Telur Dadar Padang', category: 'Telur', price: 15000, image: '/assets/telor-dadar-padang.jpg' },
-    { id: 11, name: 'Es Teh', category: 'Minuman', price: 5000, image: '/assets/es-teh.jpg' },
-    { id: 12, name: 'Es Jeruk', category: 'Minuman', price: 7000, image: '/assets/es-jeruk.jpg' },
-];
+interface Props {
+    menu_items: MenuItem[];
+    orderType?: 'takeaway' | 'delivery';
+}
 
-export default function MenuSelection({ orderType = 'takeaway' }) {
-    const [cart, setCart] = useState<CartItem[]>([]);
+export default function MenuSelection({ menu_items = [], orderType = 'takeaway' }: Props) {
+    const [cart, setCart] = useState<CartItem[]>(() => {
+        // Load initial cart from localStorage
+        const savedCart = localStorage.getItem('cart');
+        return savedCart ? JSON.parse(savedCart) : [];
+    });
     const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+
+    // Save cart to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('cart', JSON.stringify(cart));
+    }, [cart]);
 
     useEffect(() => {
         const checkIsMobile = () => {
@@ -48,9 +53,17 @@ export default function MenuSelection({ orderType = 'takeaway' }) {
     }, []);
 
     const addToCart = (item: MenuItem) => {
+        if (!item.is_available || item.stock_quantity <= 0) {
+            return;
+        }
+
         setCart(currentCart => {
             const existingItem = currentCart.find(cartItem => cartItem.id === item.id);
             if (existingItem) {
+                // Check if adding one more would exceed stock
+                if (existingItem.quantity >= item.stock_quantity) {
+                    return currentCart;
+                }
                 return currentCart.map(cartItem =>
                     cartItem.id === item.id
                         ? { ...cartItem, quantity: cartItem.quantity + 1 }
@@ -61,10 +74,13 @@ export default function MenuSelection({ orderType = 'takeaway' }) {
         });
     };
 
-    const updateQuantity = (id: number, newQuantity: number) => {
+    const updateQuantity = (id: string, newQuantity: number) => {
+        const item = menu_items.find(item => item.id === id);
+        if (!item) return;
+
         if (newQuantity === 0) {
             setCart(currentCart => currentCart.filter(item => item.id !== id));
-        } else {
+        } else if (newQuantity <= item.stock_quantity) {
             setCart(currentCart =>
                 currentCart.map(item =>
                     item.id === id ? { ...item, quantity: newQuantity } : item
@@ -154,16 +170,26 @@ export default function MenuSelection({ orderType = 'takeaway' }) {
                 <div className="flex flex-col md:flex-row gap-8">
                     <div className="w-full md:w-2/3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {menuItems.map(item => (
-                                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                                    <img
-                                        src={item.image}
-                                        alt={item.name}
-                                        className="w-full h-48 object-cover"
-                                    />
+                            {menu_items.map(item => (
+                                <Card key={item.id} className={`overflow-hidden transition-shadow duration-300 ${!item.is_available || item.stock_quantity <= 0
+                                    ? 'opacity-60'
+                                    : 'hover:shadow-lg'
+                                    }`}>
+                                    {item.image_url ? (
+                                        <img
+                                            src={`/storage/menu-items/${item.image_url.split('/').pop()}`}
+                                            alt={item.name}
+                                            className="w-full h-48 object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                            <span className="text-gray-400">No Image</span>
+                                        </div>
+                                    )}
                                     <CardContent className="p-4">
                                         <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
-                                        <p className="text-gray-600 mb-4">{item.category}</p>
+                                        <p className="text-gray-600 mb-2">{item.category.name}</p>
+                                        <p className="text-sm text-gray-500 mb-4">{item.description}</p>
                                         <div className="flex justify-between items-center">
                                             <span className="font-bold text-amber-600">
                                                 Rp {item.price.toLocaleString()}
@@ -171,10 +197,17 @@ export default function MenuSelection({ orderType = 'takeaway' }) {
                                             <Button
                                                 onClick={() => addToCart(item)}
                                                 className="bg-amber-600 hover:bg-amber-700"
+                                                disabled={!item.is_available || item.stock_quantity <= 0}
                                             >
-                                                Tambah
+                                                {!item.is_available ? 'Tidak Tersedia' :
+                                                    item.stock_quantity <= 0 ? 'Stok Habis' : 'Tambah'}
                                             </Button>
                                         </div>
+                                        {item.stock_quantity > 0 && (
+                                            <p className="text-sm text-gray-500 mt-2">
+                                                Stok: {item.stock_quantity}
+                                            </p>
+                                        )}
                                     </CardContent>
                                 </Card>
                             ))}

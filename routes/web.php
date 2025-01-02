@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\PublicReservationController;
+use App\Http\Controllers\TakeawayController;
+use App\Models\MenuItem;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -42,14 +44,41 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/menu-selection/{type?}', function ($type = 'takeaway') {
+    $menu_items = MenuItem::with('category')
+        ->where('is_available', true)
+        ->get()
+        ->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'description' => $item->description,
+                'price' => $item->price,
+                'category' => [
+                    'id' => $item->category->id,
+                    'name' => $item->category->name,
+                ],
+                'image_url' => $item->image_url,
+                'stock_quantity' => $item->stock_quantity,
+                'is_available' => $item->is_available,
+            ];
+        });
+
     return Inertia::render('MenuSelection', [
         'orderType' => $type,
+        'menu_items' => $menu_items,
     ]);
 })->name('menu-selection');
 
-Route::get('/takeaway-checkout', function () {
-    return Inertia::render('TakeawayCheckout');
-})->name('takeaway-checkout');
+// Takeaway routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/takeaway-checkout', [TakeawayController::class, 'create'])->name('takeaway-checkout');
+    Route::post('/takeaway/checkout', [TakeawayController::class, 'checkout'])->name('takeaway.checkout');
+    Route::post('/takeaway/finish', [TakeawayController::class, 'handlePaymentFinish'])->name('takeaway.finish');
+    Route::get('/takeaway/error', [TakeawayController::class, 'handlePaymentError'])->name('takeaway.error');
+    Route::get('/takeaway/cancel', [TakeawayController::class, 'handlePaymentCancel'])->name('takeaway.cancel');
+});
+
+Route::post('/takeaway/callback', [TakeawayController::class, 'handlePaymentCallback'])->name('takeaway.callback');
 
 Route::get('/delivery-checkout', function () {
     return Inertia::render('DeliveryCheckout');

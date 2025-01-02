@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
@@ -10,7 +10,8 @@ import {
     MessageSquare,
     Tag,
     Users,
-    BarChart
+    BarChart,
+    LogOut
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { ScrollArea } from "@/Components/ui/scroll-area";
@@ -73,6 +74,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const { url } = usePage();
 
+    const handleLogout = () => {
+        router.post('/logout');
+    };
+
     return (
         <div className="flex min-h-screen bg-amber-50/30">
             {/* Sidebar for desktop */}
@@ -108,6 +113,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             })}
                         </nav>
                     </ScrollArea>
+                    <div className="p-4 mt-auto border-t border-amber-700">
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 w-full text-amber-200 hover:bg-amber-700 hover:text-amber-100 transition-all duration-200"
+                        >
+                            <LogOut className="h-4 w-4 text-amber-300" />
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -148,6 +162,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                     </Link>
                                 );
                             })}
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-3 rounded-lg px-3 py-2 w-full text-amber-200 hover:bg-amber-700 hover:text-amber-100 transition-all duration-200"
+                            >
+                                <LogOut className="h-4 w-4 text-amber-300" />
+                                Logout
+                            </button>
                         </nav>
                     </ScrollArea>
                 </SheetContent>

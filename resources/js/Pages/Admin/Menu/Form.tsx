@@ -68,7 +68,7 @@ const formSchema = z.object({
     price: z.string().min(1, "Price is required"),
     category_id: z.string().min(1, "Category is required"),
     image_url: z.any().optional(),
-    stock_quantity: z.number().min(0, "Stock quantity must be positive"),
+    stock_quantity: z.string().transform((val) => parseInt(val) || 0),
     is_available: z.boolean(),
 });
 
@@ -86,7 +86,7 @@ export default function Form({ categories, menu_item }: Props) {
             price: menu_item ? formatToIDR(menu_item.price) : 'Rp 0',
             category_id: menu_item?.category_id || '',
             image_url: undefined,
-            stock_quantity: menu_item?.stock_quantity || 0,
+            stock_quantity: menu_item?.stock_quantity?.toString() || '0',
             is_available: menu_item?.is_available ?? true,
         },
     });
@@ -243,6 +243,7 @@ export default function Form({ categories, menu_item }: Props) {
                                                 <FormControl>
                                                     <Input
                                                         type="number"
+                                                        min="0"
                                                         placeholder="Enter stock quantity"
                                                         {...field}
                                                         className="border-amber-200 focus:border-amber-400 focus:ring-amber-400"
