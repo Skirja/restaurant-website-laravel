@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\MenuItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -246,6 +247,14 @@ class TakeawayController extends Controller
                 if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
                     $order->status = Order::STATUS_PROCESSING;
                     $order->payment_status = Payment::STATUS_SUCCESS;
+
+                    // Update stock for each menu item
+                    foreach ($order->items as $item) {
+                        $menuItem = MenuItem::find($item->menu_item_id);
+                        if ($menuItem) {
+                            $menuItem->decrement('stock_quantity', $item->quantity);
+                        }
+                    }
                 } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
                     $order->status = Order::STATUS_CANCELLED;
                     $order->payment_status = Payment::STATUS_FAILED;
