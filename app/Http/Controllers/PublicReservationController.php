@@ -353,21 +353,21 @@ class PublicReservationController extends Controller
         try {
             Log::info('Payment finish callback received:', $request->all());
 
-            // Extract order ID from the request (format: ORDER-{uuid})
-            $orderId = $request->order_id;
-            $orderId = str_replace('ORDER-', '', $orderId);
+            // Extract reservation ID from the request (format: BOOKING-{uuid})
+            $reservationId = $request->order_id;
+            $reservationId = str_replace('BOOKING-', '', $reservationId);
 
-            Log::info('Processing order:', [
-                'order_id' => $orderId,
+            Log::info('Processing reservation:', [
+                'reservation_id' => $reservationId,
                 'transaction_status' => $request->transaction_status
             ]);
 
-            // Find order
-            $order = Order::find($orderId);
-            if (!$order) {
-                Log::error('Order not found:', ['order_id' => $orderId]);
+            // Find reservation
+            $reservation = Reservation::find($reservationId);
+            if (!$reservation) {
+                Log::error('Reservation not found:', ['reservation_id' => $reservationId]);
                 return redirect()->route('reservations.create')
-                    ->with('error', 'Pesanan tidak ditemukan.');
+                    ->with('error', 'Reservasi tidak ditemukan.');
             }
 
             DB::beginTransaction();
@@ -376,8 +376,8 @@ class PublicReservationController extends Controller
                 $payment = Payment::updateOrCreate(
                     ['transaction_id' => $request->transaction_id],
                     [
-                        'order_id' => $orderId,
-                        'amount' => $order->total_amount,
+                        'order_id' => $reservationId,
+                        'amount' => self::BOOKING_FEE,
                         'payment_method' => $request->payment_type ?? 'unknown',
                         'status' => $request->transaction_status
                     ]
@@ -385,17 +385,23 @@ class PublicReservationController extends Controller
 
                 Log::info('Payment record created/updated:', ['payment' => $payment->toArray()]);
 
-                // Update order status based on payment status
+                // Update reservation and table status based on payment status
                 if (in_array($request->transaction_status, ['capture', 'settlement'])) {
-                    $order->update([
-                        'status' => self::STATUS_COMPLETED,
-                        'payment_status' => self::PAYMENT_SUCCESS,
+                    $reservation->update([
+                        'status' => 'confirmed',
                         'payment_id' => $payment->id
                     ]);
 
-                    Log::info('Order completed:', [
-                        'order_id' => $order->id,
-                        'payment_id' => $payment->id
+                    // Update table status
+                    $table = Table::find($reservation->table_id);
+                    if ($table) {
+                        $table->update(['status' => 'reserved']);
+                    }
+
+                    Log::info('Reservation confirmed:', [
+                        'reservation_id' => $reservation->id,
+                        'payment_id' => $payment->id,
+                        'table_id' => $table->id
                     ]);
                 }
 
